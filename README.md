@@ -4,5 +4,5 @@ This is a software development kit (SDK) for the [MC1 computer](https://github.c
 
 * Documentation.
 * Tools.
-* C/C++ headers and libraries for interfacing the MC1 hardware.
-* Linker scripts for verious executable models.
+* C/C++ and assembler headers and libraries for interfacing the MC1 hardware.
+* Linker scripts for various executable models.
