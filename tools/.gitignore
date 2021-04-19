@@ -1,0 +1,4 @@
+build*
+out*
+*.pyc
+png2mci

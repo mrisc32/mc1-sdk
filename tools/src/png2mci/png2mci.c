@@ -18,8 +18,7 @@
 //  3. This notice may not be removed or altered from any source distribution.
 //--------------------------------------------------------------------------------------------------
 
-#include "lodepng/lodepng.h"
-
+#include <lodepng.h>
 #include <lzg.h>
 
 #include <stddef.h>
