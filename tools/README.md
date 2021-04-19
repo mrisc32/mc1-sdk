@@ -32,6 +32,10 @@ and can generate optimized palettes (including alpha), etc.
 
 Convert a raw binary file to MRISC32 assembler.
 
+### raw2c.py
+
+Convert a raw binary file to C source code.
+
 ### vcpas.py
 
 A VCP assembler (VCP = Video Control Program).
