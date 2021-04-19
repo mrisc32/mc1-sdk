@@ -1,0 +1,103 @@
+/* -*- mode: ld-script; tab-width: 4; indent-tabs-mode: nil; -*-             */
+/* ------------------------------------------------------------------------- */
+/* Copyright (c) 2021 Marcus Geelnard                                        */
+/*                                                                           */
+/* This software is provided 'as-is', without any express or implied         */
+/* warranty. In no event will the authors be held liable for any damages     */
+/* arising from the use of this software.                                    */
+/*                                                                           */
+/* Permission is granted to anyone to use this software for any purpose,     */
+/* including commercial applications, and to alter it and redistribute it    */
+/* freely, subject to the following restrictions:                            */
+/*                                                                           */
+/*  1. The origin of this software must not be misrepresented; you must not  */
+/*     claim that you wrote the original software. If you use this software  */
+/*     in a product, an acknowledgment in the product documentation would be */
+/*     appreciated but is not required.                                      */
+/*                                                                           */
+/*  2. Altered source versions must be plainly marked as such, and must not  */
+/*     be misrepresented as being the original software.                     */
+/*                                                                           */
+/*  3. This notice may not be removed or altered from any source             */
+/*     distribution.                                                         */
+/* ------------------------------------------------------------------------- */
+
+/* ------------------------------------------------------------------------- */
+/* Linker script for MC1 applications that load into VRAM                    */
+/* ------------------------------------------------------------------------- */
+
+OUTPUT_FORMAT("elf32-mrisc32")
+OUTPUT_ARCH("mrisc32")
+ENTRY(_start)
+
+__vram_start = 0x40000100;   /* Start of VRAM (w room for video "registers") */
+__xram_start = 0x80000000;   /* Start of XRAM. */
+__app_start  = __xram_start; /* Start address for the application. */
+
+SECTIONS
+{
+    /* --------------------------------------------------------------------- */
+    /* Put code and data after each other.                                   */
+    /* --------------------------------------------------------------------- */
+
+    . = __app_start;
+
+    .text :
+    {
+        *(.text.start)  /* Ensure that the _start() function is placed first */
+        *(.text*)
+    }
+
+    . = ALIGN(32);
+    .rodata :
+    {
+        *(.rodata*)
+    }
+
+    . = ALIGN(32);
+    .data :
+    {
+        *(.data*)
+    }
+
+    . = ALIGN(32);
+    .sdata :
+    {
+        *(.sdata*)
+    }
+
+    __app_size = . - __app_start;
+
+
+    /* --------------------------------------------------------------------- */
+    /* BSS goes after the application code and data.                         */
+    /* We define __bss_start and __bss_size so the startup code knows what   */
+    /* memory area to clear.                                                 */
+    /* --------------------------------------------------------------------- */
+
+    . = ALIGN(32);
+    __bss_start = .;
+
+    .sbss (NOLOAD) :
+    {
+        *(.sbss*)
+        *(.scommon*)
+    }
+
+    .bss (NOLOAD) :
+    {
+        *(.bss*)
+        *(COMMON)
+    }
+
+    . = ALIGN(4);
+    __bss_size = . - __bss_start;
+
+
+    /* This tells the system where it can start to allocate XRAM. */
+    . = ALIGN(32);
+    __xram_free_start = .;
+
+    /* This tells the system where it can start to allocate VRAM. */
+    __vram_free_start = __vram_start;
+}

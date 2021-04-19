@@ -20,40 +20,43 @@
 
 SDK_HOME = ../..
 
-AS       = mrisc32-elf-as
-LD       = mrisc32-elf-gcc
-LDFLAGS  = -T $(SDK_HOME)/boot/boot-block.ld -mno-crt0
-OBJCOPY  = mrisc32-elf-objcopy
+CC           = mrisc32-elf-gcc
+CFLAGS       = -O2 -c -I $(SDK_HOME)/libmc1/include -I $(SDK_HOME)/boot/include
+AS           = mrisc32-elf-as
+ASFLAGS      = -I $(SDK_HOME)/libmc1/include
+LD           = mrisc32-elf-gcc
+LDFLAGS_BOOT = -T $(SDK_HOME)/boot/boot-block.ld -mno-crt0
+LDFLAGS_APP  = -T $(SDK_HOME)/boot/app-vram.ld -mno-crt0
+OBJCOPY      = mrisc32-elf-objcopy
 
-OUT      = ./out
+OUT = ./out
 
 .PHONY: clean all
 
-all: $(OUT)/boot-minimal.img \
-     $(OUT)/boot-picture.img
+all: $(OUT)/demo1.img
 
 clean:
 	rm -f $(OUT)/*
 
-PIC = butterfly-1200x675-2bpp.raw
+$(OUT)/boot-block.o: boot-block.c $(OUT)/demo1.raw
+	$(CC) $(CFLAGS) -DAPP_SIZE=$(shell stat -L -c %s out/demo1.raw) -o $@ $<
 
-$(OUT)/boot-minimal.o: boot-minimal.s
-	$(AS) -o $@ $<
+$(OUT)/boot-block.elf: $(OUT)/boot-block.o
+	$(LD) $(LDFLAGS_BOOT) -o $@ $<
 
-$(OUT)/boot-picture.o: boot-picture.s
-	$(AS) -o $@ $<
+$(OUT)/crt0.o: $(SDK_HOME)/boot/crt0.s
+	$(AS) $(ASFLAGS) -o $@ $<
 
-$(OUT)/boot-minimal.elf: $(OUT)/boot-minimal.o
-	$(LD) $(LDFLAGS) -o $@ $<
+$(OUT)/demo1.o: demo1.c
+	$(CC) $(CFLAGS) -o $@ $<
 
-$(OUT)/boot-picture.elf: $(OUT)/boot-picture.o
-	$(LD) $(LDFLAGS) -o $@ $<
+$(OUT)/demo1.elf: $(OUT)/crt0.o $(OUT)/demo1.o
+	$(LD) $(LDFLAGS_APP) -o $@ $(OUT)/crt0.o $(OUT)/demo1.o
 
-$(OUT)/boot-minimal.img: $(OUT)/boot-minimal.elf
-	$(OBJCOPY) -O binary $(OUT)/boot-minimal.elf $(OUT)/boot-minimal.raw
-	$(SDK_HOME)/tools/mkmc1bootimage.py $(OUT)/boot-minimal.raw $@
+$(OUT)/demo1.raw: $(OUT)/demo1.elf
+	$(OBJCOPY) -O binary $(OUT)/demo1.elf $(OUT)/demo1.raw
 
-$(OUT)/boot-picture.img: $(OUT)/boot-picture.elf $(PIC)
-	$(OBJCOPY) -O binary $(OUT)/boot-picture.elf $(OUT)/boot-picture.raw
-	$(SDK_HOME)/tools/mkmc1bootimage.py $(OUT)/boot-picture.raw $@ $(PIC)
+$(OUT)/demo1.img: $(OUT)/boot-block.elf $(OUT)/demo1.raw
+	$(OBJCOPY) -O binary $(OUT)/boot-block.elf $(OUT)/boot-block.raw
+	$(SDK_HOME)/tools/mkmc1bootimage.py $(OUT)/boot-block.raw $@ $(OUT)/demo1.raw
 
