@@ -18,18 +18,19 @@
 #  3. This notice may not be removed or altered from any source distribution.
 #--------------------------------------------------------------------------------------------------
 
-SDK_HOME = ../..
+SDK_ROOT     = ../..
+LIBMC1_DIR   = $(SDK_ROOT)/libmc1
+LIBMC1       = $(LIBMC1_DIR)/out/libmc1.a
+OUT          = ./out
 
 CC           = mrisc32-elf-gcc
-CFLAGS       = -O2 -c -I $(SDK_HOME)/libmc1/include -I $(SDK_HOME)/boot/include
+CFLAGS       = -O2 -c -I $(SDK_ROOT)/libmc1/include -I $(SDK_ROOT)/boot/include
 AS           = mrisc32-elf-as
-ASFLAGS      = -I $(SDK_HOME)/libmc1/include
+ASFLAGS      = -I $(SDK_ROOT)/libmc1/include
 LD           = mrisc32-elf-gcc
-LDFLAGS_BOOT = -T $(SDK_HOME)/boot/boot-block.ld -mno-crt0
-LDFLAGS_APP  = -T $(SDK_HOME)/boot/app-vram.ld -mno-crt0
+LDFLAGS_BOOT = -T $(SDK_ROOT)/boot/boot-block.ld -mno-crt0
+LDFLAGS_APP  = -T $(SDK_ROOT)/boot/app-vram.ld -mno-crt0 -L $(LIBMC1_DIR)/out
 OBJCOPY      = mrisc32-elf-objcopy
-
-OUT = ./out
 
 .PHONY: clean all
 
@@ -37,6 +38,10 @@ all: $(OUT)/demo1.img
 
 clean:
 	rm -f $(OUT)/*
+	make -C $(LIBMC1_DIR) clean
+
+$(LIBMC1):
+	make -C $(LIBMC1_DIR)
 
 $(OUT)/boot-block.o: boot-block.c $(OUT)/demo1.raw
 	$(CC) $(CFLAGS) -DAPP_SIZE=$(shell stat -L -c %s out/demo1.raw) -o $@ $<
@@ -44,19 +49,19 @@ $(OUT)/boot-block.o: boot-block.c $(OUT)/demo1.raw
 $(OUT)/boot-block.elf: $(OUT)/boot-block.o
 	$(LD) $(LDFLAGS_BOOT) -o $@ $<
 
-$(OUT)/crt0.o: $(SDK_HOME)/boot/crt0.s
+$(OUT)/crt0.o: $(SDK_ROOT)/boot/crt0.s
 	$(AS) $(ASFLAGS) -o $@ $<
 
 $(OUT)/demo1.o: demo1.c
 	$(CC) $(CFLAGS) -o $@ $<
 
-$(OUT)/demo1.elf: $(OUT)/crt0.o $(OUT)/demo1.o
-	$(LD) $(LDFLAGS_APP) -o $@ $(OUT)/crt0.o $(OUT)/demo1.o
+$(OUT)/demo1.elf: $(OUT)/crt0.o $(OUT)/demo1.o $(LIBMC1)
+	$(LD) $(LDFLAGS_APP) -o $@ $(OUT)/crt0.o $(OUT)/demo1.o -lmc1
 
 $(OUT)/demo1.raw: $(OUT)/demo1.elf
 	$(OBJCOPY) -O binary $(OUT)/demo1.elf $(OUT)/demo1.raw
 
 $(OUT)/demo1.img: $(OUT)/boot-block.elf $(OUT)/demo1.raw
 	$(OBJCOPY) -O binary $(OUT)/boot-block.elf $(OUT)/boot-block.raw
-	$(SDK_HOME)/tools/mkmc1bootimage.py $(OUT)/boot-block.raw $@ $(OUT)/demo1.raw
+	$(SDK_ROOT)/tools/mkmc1bootimage.py $(OUT)/boot-block.raw $@ $(OUT)/demo1.raw
 

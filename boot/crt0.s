@@ -28,6 +28,12 @@
 .include "mc1/memory.inc"
 .include "mc1/mmio.inc"
 
+.ifdef STACK_IN_XRAM
+    STACK_SIZE = 512*1024
+.else
+    STACK_SIZE = 4*1024
+.endif
+
     .section .text.start, "ax"
 
     .globl  _start
@@ -39,12 +45,12 @@ _start:
     ; Define STACK_IN_XRAM to use XRAM for the stack.
     ; ------------------------------------------------------------------------
 
-    ldi     s1, #MMIO_START
+    ldi     s20, #MMIO_START
 .ifdef STACK_IN_XRAM
-    ldw     s1, s1, #XRAMSIZE
+    ldw     s1, s20, #XRAMSIZE
     ldi     sp, #XRAM_START
 .else
-    ldw     s1, s1, #VRAMSIZE
+    ldw     s1, s20, #VRAMSIZE
     ldi     sp, #VRAM_START
 .endif
     add     sp, sp, s1              ; sp = Top of stack
@@ -67,6 +73,44 @@ _start:
     ldea    s1, s1, vl*4
     bnz     s2, 1b
 2:
+
+
+    ; ------------------------------------------------------------------------
+    ; Initialize the memory allocator.
+    ; ------------------------------------------------------------------------
+
+    call    #mem_init@pc
+
+    ; Add a memory pool for the XRAM (if any).
+    ldi     s1, #__xram_free_start
+
+    ldw     s2, s20, #XRAMSIZE
+    bz      s2, 1f
+    ldi     s3, #XRAM_START
+    sub     s3, s1, s3
+    sub     s2, s2, s3
+.ifdef STACK_IN_XRAM
+    add     s2, s2, #-STACK_SIZE
+.endif
+
+    ldi     s3, #MEM_TYPE_EXT
+    call    #mem_add_pool@pc
+1:
+
+    ; Add a memory pool for the VRAM.
+    ldi     s1, #__vram_free_start
+
+    ldw     s2, s20, #VRAMSIZE
+    ldi     s3, #VRAM_START
+    sub     s3, s1, s3
+    sub     s2, s2, s3
+.ifndef STACK_IN_XRAM
+    add     s2, s2, #-STACK_SIZE
+.endif
+
+    ldi     s3, #MEM_TYPE_VIDEO
+    call    #mem_add_pool@pc
+
 
     ; ------------------------------------------------------------------------
     ; Call main().
