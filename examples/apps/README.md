@@ -7,10 +7,15 @@ files in the `out/` folder. An image can be installed on an SD card using
 [`dd`](https://linux.die.net/man/1/dd), e.g:
 
 ```bash
-dd if=out/boot-minimal.img of=/dev/sdX
+dd if=out/demo1.img of=/dev/sdX
 ```
 
 Replace `/dev/sdX` with the SD card device.
 
 **IMPORTANT:** *Using the wrong device may corrupt the system disk on your host computer*.
+
+## Credits
+
+The [cyberpunk car picture](retrawave-car.png) was created by
+[Fernando Correa](https://www.artstation.com/fernandocorrea).
 
