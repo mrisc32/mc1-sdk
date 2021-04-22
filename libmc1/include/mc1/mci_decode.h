@@ -74,6 +74,11 @@ void mci_decode_palette(const uint8_t* mci_data, uint32_t* palette);
 /// @param[out] pixels The target pixel buffer.
 void mci_decode_pixels(const uint8_t* mci_data, uint32_t* pixels);
 
+/// @brief Get a pointer to the raw pixels from an MCI buffer.
+/// @param mci_data The MCI data buffer.
+/// @returns the internal pixel buffer if the MCI data is valid, otherwise NULL.
+const uint32_t* mci_get_raw_pixels(const uint8_t* mci_data);
+
 #ifdef __cplusplus
 }
 #endif

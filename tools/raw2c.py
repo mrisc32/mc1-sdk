@@ -17,7 +17,7 @@ def convert(raw_filename, symbol, rev):
 
     # Start of the source file.
     c_source = f'// This file is generated from {Path(raw_filename).parts[-1]}\n\n'
-    c_source += f'const unsigned char {symbol}[] = ' + '{\n  '
+    c_source += f'const unsigned char {symbol}[] __attribute__((aligned(4))) = ' + '{\n  '
 
     # Generate the data statements.
     raw_data_8bit = struct.unpack('B' * len(raw_data), raw_data)

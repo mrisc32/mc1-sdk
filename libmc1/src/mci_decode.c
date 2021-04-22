@@ -127,3 +127,13 @@ void mci_decode_pixels(const uint8_t* mci_data, uint32_t* pixels) {
   }
 }
 
+const uint32_t* mci_get_raw_pixels(const uint8_t* mci_data) {
+  const mci_header_t* hdr = mci_get_header(mci_data);
+  if (hdr == NULL) {
+    return NULL;
+  }
+
+  // Get pixel data info.
+  const uint8_t* pixel_data = get_pixel_data(hdr);
+  return is_word_aligned(pixel_data) ? (const uint32_t*)pixel_data : NULL;
+}
