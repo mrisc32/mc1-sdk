@@ -60,8 +60,13 @@ $(OUT)/retrawave-car.o: retrawave-car.png
 	$(SDK_ROOT)/tools/raw2c.py $(OUT)/retrawave-car.mci picture > $(OUT)/retrawave-car.c
 	$(CC) $(CFLAGS) -o $@ $(OUT)/retrawave-car.c
 
-$(OUT)/demo1.elf: $(OUT)/crt0.o $(OUT)/demo1.o $(OUT)/retrawave-car.o $(LIBMC1)
-	$(LD) $(LDFLAGS_APP) -o $@ $(OUT)/crt0.o $(OUT)/demo1.o $(OUT)/retrawave-car.o -lmc1
+$(OUT)/ming-charset-32x32.o: ming-charset-32x32.png
+	$(SDK_ROOT)/tools/png2mci --pal4 $< $(OUT)/ming-charset-32x32.mci
+	$(SDK_ROOT)/tools/raw2c.py $(OUT)/ming-charset-32x32.mci font_32x32 > $(OUT)/ming-charset-32x32.c
+	$(CC) $(CFLAGS) -o $@ $(OUT)/ming-charset-32x32.c
+
+$(OUT)/demo1.elf: $(OUT)/crt0.o $(OUT)/demo1.o $(OUT)/retrawave-car.o $(OUT)/ming-charset-32x32.o $(LIBMC1)
+	$(LD) $(LDFLAGS_APP) -o $@ $(OUT)/crt0.o $(OUT)/demo1.o $(OUT)/retrawave-car.o $(OUT)/ming-charset-32x32.o -lmc1
 
 $(OUT)/demo1.raw: $(OUT)/demo1.elf
 	$(OBJCOPY) -O binary $(OUT)/demo1.elf $(OUT)/demo1.raw

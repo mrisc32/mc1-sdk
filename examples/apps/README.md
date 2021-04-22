@@ -19,3 +19,4 @@ Replace `/dev/sdX` with the SD card device.
 The [cyberpunk car picture](retrawave-car.png) was created by
 [Fernando Correa](https://www.artstation.com/fernandocorrea).
 
+The [32x32 font](ming-charset-32x32.png) was created by "Ming" in 1988.
