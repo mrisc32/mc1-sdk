@@ -28,6 +28,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <mr32intrin.h>
+
 // Picture data (MCI encoded).
 extern const unsigned char picture[];
 
@@ -69,7 +71,7 @@ static const struct {
 
 // Scroller text.
 static const char SCROLL_TEXT[] =
-    "                HELLO!  THIS IS A DEMONSTRATION OF THE MC1 SDK.  AWSOME ART BY "
+    "                        HELLO!  THIS IS A DEMONSTRATION OF THE MC1 SDK.  AWSOME ART BY "
     "FERNANDO CORREA (BE SURE TO CHECK OUT HIS OTHER WORKS) AND THE FONT IS A CLASSIC AMIGA "
     "DEMO FONT BY \"MING\" (A.K.A THE KNIGHT HAWKS FONT FROM 1988).            ";
 
@@ -132,6 +134,18 @@ static uint32_t to_abgr32(const color_t col, const uint32_t alpha) {
   return (alpha << 24) | (((uint32_t)ib) << 16) | (((uint32_t)ig) << 8) | (uint32_t)ir;
 }
 
+static void fade_palette(uint32_t* palette,
+                         const int count,
+                         const uint32_t target_col,
+                         const uint32_t palette_amount) {
+  uint32_t w1 = _mr32_shuf(palette_amount, 0);
+  uint32_t w2 = _mr32_shuf(255U - palette_amount, 0);
+  for (int i = 0; i < count; ++i) {
+    uint32_t src = palette[i];
+    palette[i] = _mr32_add_b(_mr32_mulhiu_b(src, w1), _mr32_mulhiu_b(target_col, w2));
+  }
+}
+
 static void print_char(uint32_t* buf, int c) {
   // Start by shifting the entire scroller buffer to the left one whole glyph.
   memcpy((uint8_t*)buf,
@@ -172,7 +186,6 @@ int main(void) {
     return 1;
   }
   mci_decode_pixels(picture, fb->pixels);
-  mci_decode_palette(picture, fb->palette);
   fb_show(fb, LAYER_1);
 
   // Allocate memory for the scroller buffer.
@@ -234,9 +247,12 @@ int main(void) {
   color_t theme_col = {320.0F, 0.78F, 0.91F};  // RGB = 233, 51, 171
 
   // Main loop.
-  while (1) {
+  for (int frame_no = 0; ; ++frame_no) {
     // Wait for the next vertical blank interval.
     wait_vbl();
+
+    // Reset the palette (because of fading).
+    mci_decode_palette(picture, fb->palette);
 
     // Picture palette colors (specific to the picture that we're using):
     //  #5 = Darker
@@ -247,6 +263,10 @@ int main(void) {
     fb->palette[5] = to_abgr32(darkened, 255);
     fb->palette[8] = to_abgr32(theme_col, 255);
     fb->palette[12] = to_abgr32(grayened, 255);
+
+    int fade_amount = (frame_no - 250) << 1;
+    fade_amount = _mr32_max(0, _mr32_min(fade_amount, 255));
+    fade_palette(fb->palette, 16, 0xff887878, fade_amount);
 
     // Scroller color bar.
     float scroll_col_h = my_mod(theme_col.h + 100.0F, 360.0F);
