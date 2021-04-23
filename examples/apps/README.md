@@ -16,7 +16,8 @@ Replace `/dev/sdX` with the SD card device.
 
 ## Credits
 
-The [cyberpunk car picture](retrawave-car.png) was created by
+The cyberpunk car pictures ([Retrowave car](retrawave-car.png),
+[Is that a supra?](is-that-a-supra.png) and [Phantom](phantom.png)) were created by
 [Fernando Correa](https://www.artstation.com/fernandocorrea).
 
 The [32x32 font](ming-charset-32x32.png) was created by "Ming" in 1988.

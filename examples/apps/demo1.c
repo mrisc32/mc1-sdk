@@ -31,7 +31,11 @@
 #include <mr32intrin.h>
 
 // Picture data (MCI encoded).
-extern const unsigned char picture[];
+extern const unsigned char pic_retrawave_car[];
+extern const unsigned char pic_is_that_a_supra[];
+extern const unsigned char pic_phantom[];
+
+static const unsigned char* PICS[3] = {pic_retrawave_car, pic_is_that_a_supra, pic_phantom};
 
 // Font data (MCI encoded).
 extern const unsigned char font_32x32[];
@@ -177,7 +181,7 @@ static void print_char(uint32_t* buf, int c) {
 
 int main(void) {
   // Decode the picture into a framebuffer for VCP layer 1.
-  const mci_header_t* pic_hdr = mci_get_header(picture);
+  const mci_header_t* pic_hdr = mci_get_header(pic_retrawave_car);
   if (!pic_hdr) {
     return 1;
   }
@@ -185,11 +189,10 @@ int main(void) {
   if (!fb) {
     return 1;
   }
-  mci_decode_pixels(picture, fb->pixels);
   fb_show(fb, LAYER_1);
 
   // Allocate memory for the scroller buffer.
-  uint32_t* scroll_buf = mem_alloc(SCROLLER_H * SCROLLER_STRIDE, MEM_TYPE_VIDEO);
+  uint32_t* scroll_buf = mem_alloc(SCROLLER_H * SCROLLER_STRIDE, MEM_TYPE_VIDEO | MEM_CLEAR);
 
   // Set up the scroller VCP for layer 2.
   uint32_t* scroll_vcp = mem_alloc(SCROLLER_VCP_SIZE, MEM_TYPE_VIDEO);
@@ -251,22 +254,56 @@ int main(void) {
     // Wait for the next vertical blank interval.
     wait_vbl();
 
-    // Reset the palette (because of fading).
-    mci_decode_palette(picture, fb->palette);
+    // Decode a new image?
+    int pic_no = (frame_no >> 10) % (sizeof(PICS) / sizeof(PICS[0]));
+    const unsigned char* pic = PICS[pic_no];
+    if ((frame_no & 1023) == 0) {
+      mci_decode_pixels(pic, fb->pixels);
+    }
 
-    // Picture palette colors (specific to the picture that we're using):
-    //  #5 = Darker
-    //  #8 = Main color
-    //  #12 = Less colorful
-    color_t darkened = {theme_col.h, theme_col.s, theme_col.v * 0.6F};
-    color_t grayened = {theme_col.h, theme_col.s * 0.5F, theme_col.v * 0.6F};
-    fb->palette[5] = to_abgr32(darkened, 255);
-    fb->palette[8] = to_abgr32(theme_col, 255);
-    fb->palette[12] = to_abgr32(grayened, 255);
+    // Decode the palette every frame (because the fading owerwrites the original palette).
+    mci_decode_palette(pic, fb->palette);
 
-    int fade_amount = (frame_no - 250) << 1;
-    fade_amount = _mr32_max(0, _mr32_min(fade_amount, 255));
-    fade_palette(fb->palette, 16, 0xff887878, fade_amount);
+    // Alter the theme color.
+    {
+      int idx_dark;
+      int idx_main;
+      int idx_gray;
+      switch (pic_no) {
+        case 0:
+          idx_dark = 5;
+          idx_main = 8;
+          idx_gray = 12;
+          break;
+        case 1:
+          idx_dark = -1;
+          idx_main = 10;
+          idx_gray = -1;
+          break;
+        case 2:
+          idx_dark = -1;
+          idx_main = -1;
+          idx_gray = -1;
+          break;
+      }
+      color_t darkened = {theme_col.h, theme_col.s, theme_col.v * 0.6F};
+      color_t grayened = {theme_col.h, theme_col.s * 0.5F, theme_col.v * 0.6F};
+      if (idx_dark >= 0)
+        fb->palette[idx_dark] = to_abgr32(darkened, 255);
+      if (idx_main >= 0)
+        fb->palette[idx_main] = to_abgr32(theme_col, 255);
+      if (idx_gray >= 0)
+        fb->palette[idx_gray] = to_abgr32(grayened, 255);
+    }
+
+    // Fade in/out between picture changes.
+    {
+      int sub_frame_no = (frame_no & 1023);
+      int fade_in = sub_frame_no << 1;
+      int fade_out = (1024 - sub_frame_no) << 1;
+      int fade_amount = _mr32_max(0, _mr32_min(_mr32_min(fade_in, fade_out), 255));
+      fade_palette(fb->palette, 16, 0xffe8eeee, fade_amount);
+    }
 
     // Scroller color bar.
     float scroll_col_h = my_mod(theme_col.h + 100.0F, 360.0F);

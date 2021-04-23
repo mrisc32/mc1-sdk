@@ -55,18 +55,28 @@ $(OUT)/crt0.o: $(SDK_ROOT)/boot/crt0.s
 $(OUT)/demo1.o: demo1.c
 	$(CC) $(CFLAGS) -o $@ $<
 
+$(OUT)/is-that-a-supra.o: is-that-a-supra.png
+	$(SDK_ROOT)/tools/png2mci --pal4 --lzg $< $(OUT)/is-that-a-supra.mci
+	$(SDK_ROOT)/tools/raw2c.py $(OUT)/is-that-a-supra.mci pic_is_that_a_supra > $(OUT)/is-that-a-supra.c
+	$(CC) $(CFLAGS) -o $@ $(OUT)/is-that-a-supra.c
+
 $(OUT)/retrawave-car.o: retrawave-car.png
 	$(SDK_ROOT)/tools/png2mci --pal4 --lzg $< $(OUT)/retrawave-car.mci
-	$(SDK_ROOT)/tools/raw2c.py $(OUT)/retrawave-car.mci picture > $(OUT)/retrawave-car.c
+	$(SDK_ROOT)/tools/raw2c.py $(OUT)/retrawave-car.mci pic_retrawave_car > $(OUT)/retrawave-car.c
 	$(CC) $(CFLAGS) -o $@ $(OUT)/retrawave-car.c
+
+$(OUT)/phantom.o: phantom.png
+	$(SDK_ROOT)/tools/png2mci --pal4 --lzg $< $(OUT)/phantom.mci
+	$(SDK_ROOT)/tools/raw2c.py $(OUT)/phantom.mci pic_phantom > $(OUT)/phantom.c
+	$(CC) $(CFLAGS) -o $@ $(OUT)/phantom.c
 
 $(OUT)/ming-charset-32x32.o: ming-charset-32x32.png
 	$(SDK_ROOT)/tools/png2mci --pal4 $< $(OUT)/ming-charset-32x32.mci
 	$(SDK_ROOT)/tools/raw2c.py $(OUT)/ming-charset-32x32.mci font_32x32 > $(OUT)/ming-charset-32x32.c
 	$(CC) $(CFLAGS) -o $@ $(OUT)/ming-charset-32x32.c
 
-$(OUT)/demo1.elf: $(OUT)/crt0.o $(OUT)/demo1.o $(OUT)/retrawave-car.o $(OUT)/ming-charset-32x32.o $(LIBMC1)
-	$(LD) $(LDFLAGS_APP) -o $@ $(OUT)/crt0.o $(OUT)/demo1.o $(OUT)/retrawave-car.o $(OUT)/ming-charset-32x32.o -lmc1
+$(OUT)/demo1.elf: $(OUT)/crt0.o $(OUT)/demo1.o $(OUT)/is-that-a-supra.o $(OUT)/retrawave-car.o $(OUT)/phantom.o $(OUT)/ming-charset-32x32.o $(LIBMC1)
+	$(LD) $(LDFLAGS_APP) -o $@ $(OUT)/crt0.o $(OUT)/demo1.o $(OUT)/is-that-a-supra.o $(OUT)/retrawave-car.o $(OUT)/phantom.o $(OUT)/ming-charset-32x32.o -lmc1
 
 $(OUT)/demo1.raw: $(OUT)/demo1.elf
 	$(OBJCOPY) -O binary $(OUT)/demo1.elf $(OUT)/demo1.raw
