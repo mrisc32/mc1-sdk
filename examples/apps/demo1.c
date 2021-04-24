@@ -85,12 +85,6 @@ typedef struct {
   float v;
 } color_t;
 
-static void wait_vbl(void) {
-  const uint32_t old_frame_no = MMIO(VIDFRAMENO);
-  while (MMIO(VIDFRAMENO) == old_frame_no)
-    ;
-}
-
 static float my_abs(const float x) {
   return x < 0 ? -x : x;
 }
@@ -250,16 +244,16 @@ int main(void) {
   color_t theme_col = {320.0F, 0.78F, 0.91F};  // RGB = 233, 51, 171
 
   // Main loop.
-  for (int frame_no = 0; ; ++frame_no) {
+  uint32_t old_vidframeno = MMIO(VIDFRAMENO);
+  for (int frame_no = 0;; ++frame_no) {
     // Wait for the next vertical blank interval.
-    wait_vbl();
+    while (MMIO(VIDFRAMENO) == old_vidframeno)
+      ;
+    old_vidframeno = MMIO(VIDFRAMENO);
 
-    // Decode a new image?
+    // Select which picture we're displaying.
     int pic_no = (frame_no >> 10) % (sizeof(PICS) / sizeof(PICS[0]));
     const unsigned char* pic = PICS[pic_no];
-    if ((frame_no & 1023) == 0) {
-      mci_decode_pixels(pic, fb->pixels);
-    }
 
     // Decode the palette every frame (because the fading owerwrites the original palette).
     mci_decode_palette(pic, fb->palette);
@@ -333,6 +327,11 @@ int main(void) {
       }
     }
     *scroll_xoffs = vcp_emit_setreg(VCR_XOFFS, scroll_text_scroll << 16);
+
+    // Decode the picture?
+    if ((frame_no & 1023) == 0) {
+      mci_decode_pixels(pic, fb->pixels);
+    }
 
     // For profiling - print the current raster line to the 7-segment display.
     sevseg_print_dec(MMIO(VIDY));

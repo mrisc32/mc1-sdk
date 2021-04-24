@@ -24,7 +24,7 @@ LIBMC1       = $(LIBMC1_DIR)/out/libmc1.a
 OUT          = ./out
 
 CC           = mrisc32-elf-gcc
-CFLAGS       = -O2 -c -I $(SDK_ROOT)/libmc1/include -I $(SDK_ROOT)/boot/include
+CFLAGS       = -O3 -c -I $(SDK_ROOT)/libmc1/include -I $(SDK_ROOT)/boot/include
 AS           = mrisc32-elf-as
 ASFLAGS      = -I $(SDK_ROOT)/libmc1/include
 LD           = mrisc32-elf-gcc
