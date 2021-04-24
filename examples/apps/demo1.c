@@ -57,7 +57,7 @@ static const struct {
     // 32 - 39 [ !"#$%&']
     {2, 2}, {0, 0}, {0, 1}, {2, 2}, {2, 2}, {2, 2}, {2, 2}, {0, 5},
     // 40 - 47 [()*+,-./]
-    {1, 8}, {2, 0}, {2, 2}, {2, 2}, {0, 2}, {0, 3}, {0, 4}, {2, 2},
+    {1, 8}, {2, 0}, {2, 2}, {2, 2}, {0, 2}, {0, 3}, {0, 4}, {4, 9},
     // 48 - 55 [01234567]
     {0, 6}, {0, 7}, {0, 8}, {0, 9}, {1, 0}, {1, 1}, {1, 2}, {1, 3},
     // 56 - 63 [89:;<=>?]
@@ -75,9 +75,13 @@ static const struct {
 
 // Scroller text.
 static const char SCROLL_TEXT[] =
-    "                        HELLO!  THIS IS A DEMONSTRATION OF THE MC1 SDK.  AWSOME ART BY "
-    "FERNANDO CORREA (BE SURE TO CHECK OUT HIS OTHER WORKS) AND THE FONT IS A CLASSIC AMIGA "
-    "DEMO FONT BY \"MING\" (A.K.A THE KNIGHT HAWKS FONT FROM 1988).            ";
+    "                        "
+    "HELLO!  THIS IS A DEMONSTRATION OF THE MC1 SDK.  "
+    "THE AWSOME ART WAS CREATD BY FERNANDO CORREA (BE SURE TO CHECK OUT HIS OTHER WORKS), "
+    "AND THE FONT IS A CLASSIC AMIGA DEMO FONT FROM 1988 BY \"MING\" (A.K.A THE KNIGHT HAWKS "
+    "FONT).      "
+    "FIND OUT MORE ON:   === HTTPS://GITHUB.COM/MRISC32/MC1-SDK ==="
+    "                        ";
 
 typedef struct {
   float h;

@@ -16,7 +16,7 @@ Replace `/dev/sdX` with the SD card device.
 
 ## Credits
 
-The cyberpunk car pictures ([Retrowave car](retrawave-car.png),
+The cyberpunk car pictures ([Retrawave car](retrawave-car.png),
 [Is that a supra?](is-that-a-supra.png) and [Phantom](phantom.png)) were created by
 [Fernando Correa](https://www.artstation.com/fernandocorrea).
 
