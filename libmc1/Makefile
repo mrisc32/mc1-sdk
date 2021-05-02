@@ -55,6 +55,7 @@ LIBMC1_OBJS = \
     $(OUT)/crc32c.o \
     $(OUT)/fast_math.o \
     $(OUT)/framebuffer.o \
+    $(OUT)/gfx.o \
     $(OUT)/glyph_renderer.o \
     $(OUT)/keyboard.o \
     $(OUT)/keyboard_layout_en_us.o \
@@ -71,37 +72,21 @@ LIBMC1_OBJS = \
 $(OUT)/libmc1.a: $(LIBMC1_OBJS)
 	$(AR) $(ARFLAGS) $@ $(LIBMC1_OBJS)
 
-$(OUT)/crc7.o: src/crc7.c
+$(OUT)/%.o: src/%.c
 	$(CC) $(CCFLAGS) -o $@ $<
 
-$(OUT)/crc16.o: src/crc16.c
-	$(CC) $(CCFLAGS) -o $@ $<
-
-$(OUT)/crc32c.o: src/crc32c.c
-	$(CC) $(CCFLAGS) -o $@ $<
-
-$(OUT)/fast_math.o: src/fast_math.c
-	$(CC) $(CCFLAGS) -o $@ $<
-
-$(OUT)/framebuffer.o: src/framebuffer.c
-	$(CC) $(CCFLAGS) -o $@ $<
-
-$(OUT)/glyph_renderer.o: src/glyph_renderer.cpp
+$(OUT)/%.o: src/%.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
-$(OUT)/keyboard.o: src/keyboard.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $<
+ASINCS = \
+    include/mc1/framebuffer.inc \
+    include/mc1/memory.inc \
+    include/mc1/mmio.inc
 
-$(OUT)/keyboard_layout_en_us.o: src/keyboard_layout_en_us.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $<
+$(OUT)/%.o: src/%.s $(ASINCS)
+	$(AS) $(ASFLAGS) -o $@ $<
 
-$(OUT)/leds.o: src/leds.s include/mc1/mmio.inc
-	$(AS) $(ASFLAGS) -o $@ src/leds.s
-
-$(OUT)/lzg_mc1.o: src/lzg_mc1.c
-	$(CC) $(CCFLAGS) -o $@ $<
-
-$(OUT)/mc1-font-8x8.o: $(OUT)/mc1-font-8x8.s
+$(OUT)/%.o: $(OUT)/%.s $(ASINCS)
 	$(AS) $(ASFLAGS) -o $@ $<
 
 $(OUT)/mc1-font-8x8.s: src/mc1-font-8x8.raw
@@ -111,25 +96,6 @@ $(OUT)/mc1-font-8x8.s: src/mc1-font-8x8.raw
 	    head -c -1024 \
 	    > $(OUT)/mc1-font-8x8-part.raw
 	../tools/raw2asm.py --rev $(OUT)/mc1-font-8x8-part.raw mc1_font_8x8 > $@
-
-$(OUT)/mci_decode.o: src/mci_decode.c
-	$(CC) $(CCFLAGS) -o $@ $<
-
-$(OUT)/memory.o: src/memory.c
-	$(CC) $(CCFLAGS) -o $@ $<
-
-$(OUT)/sdcard.o: src/sdcard.c
-	$(CC) $(CCFLAGS) -o $@ $<
-
-$(OUT)/time.o: src/time.s include/mc1/mmio.inc
-	$(AS) $(ASFLAGS) -o $@ $<
-
-$(OUT)/vconsole.o: src/vconsole.s include/mc1/mmio.inc include/mc1/memory.inc
-	$(AS) $(ASFLAGS) -o $@ $<
-
-$(OUT)/vcp.o: src/vcp.c
-	$(CC) $(CCFLAGS) -o $@ $<
-
 
 # Include dependency files (generated when building the object files).
 -include $(LIBMC1_OBJS:.o=.d)
