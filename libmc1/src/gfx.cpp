@@ -73,43 +73,7 @@ inline uint32_t bitmix(const uint32_t mask, const uint32_t a, const uint32_t b) 
 #endif
 }
 
-inline void gfx_fill_rect_kernel(uint32_t* dst, int w, int h, int stride, uint32_t color) {
-#ifdef __MRISC32_VECTOR_OPS__
-  auto rows_left = h;
-  int cols_left;
-  uint32_t* ptr;
-  __asm volatile(
-      "cpuid   vl,z,z\n\t"
-      "mov     v1,%[color]\n"
-      "1:\n\t"
-      "mov     %[ptr],%[dst]\n\t"
-      "mov     %[cols_left],%[w]\n"
-      "2:\n\t"
-      "minu    vl,%[cols_left],vl\n\t"
-      "sub     %[cols_left],%[cols_left],vl\n\t"
-      "stw     v1,%[ptr],#4\n\t"
-      "ldea    %[ptr],%[ptr],vl*4\n\t"
-      "bnz     %[cols_left],2b\n"
-      "\n\t"
-      "add     %[rows_left],%[rows_left],#-1\n\t"
-      "add     %[dst],%[dst],%[stride]\n\t"
-      "bnz     %[rows_left],1b"
-      : [ dst ] "+r"(dst),
-        [ ptr ] "=&r"(ptr),
-        [ rows_left ] "+r"(rows_left),
-        [ cols_left ] "=&r"(cols_left)
-      : [ color ] "r"(color), [ w ] "r"(w), [ stride ] "r"(stride)
-      : "vl", "v1");
-#else
-  for (int v = 0; v < h; ++v) {
-    for (int u = 0; u < w; ++u) {
-      dst[u] = color;
-    }
-    dst += stride >> 2;
-  }
-#endif
-}
-
+// TODO(m): Specialize this template for LOG2PPW == 0 (i.e. no head/tail necessary).
 template <uint32_t LOG2PPW>
 void gfx_fill_rect_internal(fb_t* fb,
                             const int x0,
@@ -119,45 +83,104 @@ void gfx_fill_rect_internal(fb_t* fb,
                             const uint32_t color) {
   constexpr auto PPW = 1 << LOG2PPW;
   constexpr auto BPP = 32 >> LOG2PPW;
+
   const uint32_t align = x0 & (PPW - 1);
   const uint32_t tail = (x0 + w) & (PPW - 1);
-  uint32_t mask1 = (PPW > 1 && align != 0) ? (0xffffffffU >> ((PPW - align) * BPP)) : 0;
-  const uint32_t mask2 = tail ? (0xffffffffU << (tail * BPP)) : 0;
+  auto head_pixels = (align != 0) ? static_cast<int>(PPW - align) : 0;
+  auto tail_pixels = (tail != 0) ? static_cast<int>(tail) : 0;
+  uint32_t mask1 = (align != 0) ? (0xffffffffU >> (head_pixels * BPP)) : 0;
+  const uint32_t mask2 = 0xffffffffU << (tail_pixels * BPP);
 
-  bool do_align = (align != 0);
+  bool do_head = (align != 0);
+  bool do_tail = (tail != 0);
   if ((align + w) < PPW) {
     mask1 |= mask2;
-    do_align = true;
+    do_head = true;
+    do_tail = false;
+    head_pixels = w;
   }
+  const auto words_per_row = (w - head_pixels) >> LOG2PPW;
 
-  auto* row = static_cast<uint32_t*>(fb->pixels);
-  row += y0 * (fb->stride >> 2) + (x0 >> LOG2PPW);
+  auto* dst = static_cast<uint32_t*>(fb->pixels);
+  dst += y0 * (fb->stride >> 2) + (x0 >> LOG2PPW);
+#ifdef __MRISC32_VECTOR_OPS__
+  auto rows_left = h;
+  int words_left;
+  uint32_t* ptr;
+  uint32_t tmp;
+  __asm volatile(
+      "cpuid   vl, z, z\n\t"
+      "mov     v1, %[color]\n"
+
+      "1:\n\t"
+      "mov     %[ptr], %[dst]\n\t"
+
+      // Head (partial word).
+      "bz      %[do_head], 2f\n\t"
+      "ldw     %[tmp], %[ptr], #0\n\t"
+      "add     %[ptr], %[ptr], #4\n\t"
+      "sel.213 %[tmp], %[mask1], %[color]\n\t"
+      "stw     %[tmp], %[ptr], #-4\n"
+
+      "2:\n\t"
+      "bz      %[words_per_row], 4f\n\t"
+      "mov     %[words_left], %[words_per_row]\n"
+
+      // Main loop (whole words).
+      "3:\n\t"
+      "min     vl, vl, %[words_left]\n\t"
+      "sub     %[words_left], %[words_left], vl\n\t"
+      "stw     v1, %[ptr], #4\n\t"
+      "ldea    %[ptr], %[ptr], vl*4\n\t"
+      "bgt     %[words_left], 3b\n\t"
+
+      // Tail (partial word).
+      "bz      %[do_tail], 4f\n\t"
+      "ldw     %[tmp], %[ptr], #0\n\t"
+      "sel.213 %[tmp], %[mask2], %[color]\n\t"
+      "stw     %[tmp], %[ptr], #0\n"
+
+      "4:\n\t"
+      "add     %[rows_left], %[rows_left], #-1\n\t"
+      "add     %[dst], %[dst], %[stride]\n\t"
+      "bnz     %[rows_left], 1b"
+      : [ dst ] "+r"(dst),
+        [ ptr ] "=&r"(ptr),
+        [ tmp ] "=&r"(tmp),
+        [ rows_left ] "+r"(rows_left),
+        [ words_left ] "=&r"(words_left)
+      : [ color ] "r"(color),
+        [ stride ] "r"(fb->stride),
+        [ do_head ] "r"(do_head),
+        [ do_tail ] "r"(do_tail),
+        [ mask1 ] "r"(mask1),
+        [ mask2 ] "r"(mask2),
+        [ head_pixels ] "r"(head_pixels),
+        [ words_per_row ] "r"(words_per_row)
+      : "vl", "v1");
+#else
   for (int v = 0; v < h; ++v) {
-    auto* ptr = row;
-    int pixels_left = w;
+    auto* ptr = dst;
 
-    // Head alignment (partial word).
-    if (do_align) {
+    // Head (partial word).
+    if (do_head) {
       *ptr = bitmix(mask1, *ptr, color);
       ++ptr;
-      pixels_left -= std::min(w, static_cast<int>(PPW - align));
     }
 
     // Main loop (whole words).
-    // TODO(m): Vectorize this loop.
-    auto words_left = pixels_left >> LOG2PPW;
-    pixels_left -= words_left << LOG2PPW;
-    for (; words_left > 0; --words_left) {
+    for (auto words_left = words_per_row; words_left > 0; --words_left) {
       *ptr++ = color;
     }
 
     // Tail (partial word).
-    if (pixels_left > 0) {
+    if (do_tail) {
       *ptr = bitmix(mask2, *ptr, color);
     }
 
-    row += (fb->stride >> 2);
+    dst += (fb->stride >> 2);
   }
+#endif
 }
 
 }  // namespace
@@ -199,11 +222,9 @@ extern "C" void gfx_fill_rect(fb_t* fb, int x0, int y0, int w, int h, uint32_t c
       gfx_fill_rect_internal<1>(fb, x0, y0, w, h, repeat2x16(color));
       break;
 
-    case CMODE_RGBA8888: {
-      auto* row = static_cast<uint32_t*>(fb->pixels);
-      row += y0 * (fb->stride >> 2) + x0;
-      gfx_fill_rect_kernel(row, w, h, fb->stride, color);
-    } break;
+    case CMODE_RGBA8888:
+      gfx_fill_rect_internal<0>(fb, x0, y0, w, h, color);
+      break;
   }
 }
 
