@@ -29,28 +29,28 @@
 
 ;--------------------------------------------------------------------------------------------------
 ; void _boot(const void* rom_base);
-;  s1 = rom_base
+;  r1 = rom_base
 ;--------------------------------------------------------------------------------------------------
 _boot:
-    ; Store the ROM jump table address in s26.
-    mov     s26, s1
+    ; Store the ROM jump table address in r26.
+    mov     r26, r1
 
-    ; s10 = start of VRAM
-    ldi     s10, #0x40000000
+    ; r10 = start of VRAM
+    ldi     r10, #0x40000000
 
     ; Configure VCP for layer 1 to be silent.
-    ldi     s1, #0x50007fff     ; Wait forever
-    stw     s1, s10, #16
+    ldi     r1, #0x50007fff     ; Wait forever
+    stw     r1, r10, #16
 
     ; Configure VCP for layer 2 to jump to our VCP.
-    ldi     s1, #vcp@pc
-    sub     s1, s1, s10
-    lsr     s1, s1, #2          ; s1 = JMP vcp (in video address space)
-    stw     s1, s10, #32
+    ldi     r1, #vcp@pc
+    sub     r1, r1, r10
+    lsr     r1, r1, #2          ; r1 = JMP vcp (in video address space)
+    stw     r1, r10, #32
 
     ; Define the frame buffer (just a horizontal bit pattern).
-    ldi     s1, #0x55555555
-    stw     s1, s10, #64        ; Frame buffer @ 0x40000040
+    ldi     r1, #0x55555555
+    stw     r1, r10, #64        ; Frame buffer @ 0x40000040
 
     ; Loop forever.
 1:

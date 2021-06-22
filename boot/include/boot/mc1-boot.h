@@ -45,7 +45,7 @@
 /// @param msg The text message to display.
 /// @note This function never returns.
 static inline _Noreturn void doh(const void* rom_base, const char* msg) {
-  register const char* arg1_ asm("s1") = msg;
+  register const char* arg1_ asm("r1") = msg;
   __asm__ volatile (
     "j       %[rom_base], #0"  // doh: ROM table offset #0
     :
@@ -68,11 +68,11 @@ static inline int blk_read(const void* rom_base,
                            int device,
                            size_t first_block,
                            size_t num_block) {
-  register void* arg1_ asm("s1") = ptr;
-  register int arg2_ asm("s2") = device;
-  register size_t arg3_ asm("s3") = first_block;
-  register size_t arg4_ asm("s4") = num_block;
-  register int result_ asm("s1");
+  register void* arg1_ asm("r1") = ptr;
+  register int arg2_ asm("r2") = device;
+  register size_t arg3_ asm("r3") = first_block;
+  register size_t arg4_ asm("r4") = num_block;
+  register int result_ asm("r1");
   __asm__ volatile (
     "jl      %[rom_base], #4"  // blk_read: ROM table offset #4
     : [result] "=r"(result_)
@@ -81,7 +81,7 @@ static inline int blk_read(const void* rom_base,
       "r"(arg2_),
       "r"(arg3_),
       "r"(arg4_)
-    : "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "s14", "s15", "lr"
+    : "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15", "lr"
   );
   return result_;
 }
@@ -92,16 +92,16 @@ static inline int blk_read(const void* rom_base,
 /// @param num_bytes Number of bytes in the buffer.
 /// @returns the checksum value.
 static inline unsigned crc32c(const void* rom_base, void* ptr, size_t num_bytes) {
-  register void* arg1_ asm("s1") = ptr;
-  register size_t arg2_ asm("s2") = num_bytes;
-  register unsigned result_ asm("s1");
+  register void* arg1_ asm("r1") = ptr;
+  register size_t arg2_ asm("r2") = num_bytes;
+  register unsigned result_ asm("r1");
   __asm__ volatile (
     "jl      %[rom_base], #8"  // crc32c: ROM table offset #8
     : [result] "=r"(result_)
     : [rom_base] "r"(rom_base),
       "r"(arg1_),
       "r"(arg2_)
-    : "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "s14", "s15", "lr"
+    : "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15", "lr"
   );
   return result_;
 }
@@ -118,11 +118,11 @@ static inline unsigned LZG_Decode(const void* rom_base,
                                   unsigned insize,
                                   void* out,
                                   unsigned outsize) {
-  register const void* arg1_ asm("s1") = in;
-  register unsigned arg2_ asm("s2") = insize;
-  register void* arg3_ asm("s3") = out;
-  register unsigned arg4_ asm("s4") = outsize;
-  register unsigned result_ asm("s1");
+  register const void* arg1_ asm("r1") = in;
+  register unsigned arg2_ asm("r2") = insize;
+  register void* arg3_ asm("r3") = out;
+  register unsigned arg4_ asm("r4") = outsize;
+  register unsigned result_ asm("r1");
   __asm__ volatile (
     "jl      %[rom_base], #12"  // LZG_Decode: ROM table offset #12
     : [result] "=r"(result_)
@@ -131,7 +131,7 @@ static inline unsigned LZG_Decode(const void* rom_base,
       "r"(arg2_),
       "r"(arg3_),
       "r"(arg4_)
-    : "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "s14", "s15", "lr"
+    : "r5", "r6", "r7", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15", "lr"
   );
   return result_;
 }

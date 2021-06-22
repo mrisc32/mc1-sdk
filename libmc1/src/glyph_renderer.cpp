@@ -678,16 +678,16 @@ void glyph_renderer_t::draw_line(const float x0, const float y0, const float x1,
 #ifdef __MRISC32_HARD_FLOAT__
   // TODO(m): Vectorize this loop.
   __asm__ volatile(
-      "ldi     s8, #255\n"
+      "ldi     r8, #255\n"
       "1:\n\t"
-      "ftoir   s7, %2, z\n\t"
-      "ftoir   s6, %1, z\n\t"
+      "ftoir   r7, %2, z\n\t"
+      "ftoir   r6, %1, z\n\t"
       "fadd    %2, %2, %6\n\t"
       "fadd    %1, %1, %5\n\t"
       "add     %0, %0, #-1\n\t"
-      "lsl     s7, s7, %4\n\t"
-      "add     s7, s7, s6\n\t"
-      "stb     s8, %3, s7\n\t"
+      "lsl     r7, r7, %4\n\t"
+      "add     r7, r7, r6\n\t"
+      "stb     r8, %3, r7\n\t"
       "bnz     %0, 1b"
       : "+r"(num_steps),    // %0
         "+r"(x),            // %1
@@ -696,7 +696,7 @@ void glyph_renderer_t::draw_line(const float x0, const float y0, const float x1,
         "r"(m_log2_width),  // %4
         "r"(step_x),        // %5
         "r"(step_y)         // %6
-      : "s6", "s7", "s8");
+      : "r6", "r7", "r8");
 #else
   do {
     const int ix = round_to_int(x);

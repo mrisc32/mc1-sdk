@@ -13,7 +13,7 @@ When the boot code is called, it is passed the following information in register
 
 | Register | Contents |
 |---|---|
-| S1 | ROM base (see "ROM function table" below) |
+| R1 | ROM base (see "ROM function table" below) |
 
 Once the boot code has been called, it is not expected that it will return. All system control is handed over to the loaded boot code.
 
@@ -43,9 +43,9 @@ The ROM function table is an array of callable routines that can be useful for t
 To call a function, jump and link to the address rom_base+offset, e.g:
 
 ```
-  mov s26, s1     ; s26 = rom_base
+  mov r26, r1     ; r26 = rom_base
   ...
-  jl  s26, #4     ; Call blk_read()
+  jl  r26, #4     ; Call blk_read()
 ```
 
 ## Typical boot code
@@ -71,24 +71,24 @@ Here is a simple example that loads a larger piece of code into memory and execu
   .p2align 2
 
 _boot:
-  ; Store the ROM jump table address in s26.
-  mov     s26, s1
+  ; Store the ROM jump table address in r26.
+  mov     r26, r1
 
   ; Read the program blocks into VRAM.
-  ldi     s16, #PRG_ADDRESS
-  mov     s1, s16
-  ldi     s2, #0
-  ldi     s3, #START_BLOCK
-  ldi     s4, #NUM_BLOCKS
-  jl      s26, #BLK_READ
-  bz      s1, fail
+  ldi     r16, #PRG_ADDRESS
+  mov     r1, r16
+  ldi     r2, #0
+  ldi     r3, #START_BLOCK
+  ldi     r4, #NUM_BLOCKS
+  jl      r26, #BLK_READ
+  bz      r1, fail
 
   ; Jump to the loaded code (start the program).
-  j       s16, #0
+  j       r16, #0
 
 fail:
-  ldi     s1, #msg@pc
-  j       s26, #DOH        ; doh (msg) !
+  ldi     r1, #msg@pc
+  j       r26, #DOH        ; doh (msg) !
 
 msg:
   .asciz  "Failed to load MyProgram"

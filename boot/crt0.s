@@ -45,33 +45,33 @@ _start:
     ; Define STACK_IN_XRAM to use XRAM for the stack.
     ; ------------------------------------------------------------------------
 
-    ldi     s20, #MMIO_START
+    ldi     r20, #MMIO_START
 .ifdef STACK_IN_XRAM
-    ldw     s1, s20, #XRAMSIZE
+    ldw     r1, r20, #XRAMSIZE
     ldi     sp, #XRAM_START
 .else
-    ldw     s1, s20, #VRAMSIZE
+    ldw     r1, r20, #VRAMSIZE
     ldi     sp, #VRAM_START
 .endif
-    add     sp, sp, s1              ; sp = Top of stack
+    add     sp, sp, r1              ; sp = Top of stack
 
 
     ; ------------------------------------------------------------------------
     ; Clear the BSS data (if any).
     ; ------------------------------------------------------------------------
 
-    ldi     s2, #__bss_size
-    bz      s2, 2f
-    lsr     s2, s2, #2      ; BSS size is always a multiple of 4 bytes.
+    ldi     r2, #__bss_size
+    bz      r2, 2f
+    lsr     r2, r2, #2      ; BSS size is always a multiple of 4 bytes.
 
-    ldi     s1, #__bss_start
-    cpuid   s3, z, z
+    ldi     r1, #__bss_start
+    cpuid   r3, z, z
 1:
-    minu    vl, s2, s3
-    sub     s2, s2, vl
-    stw     vz, s1, #4
-    ldea    s1, s1, vl*4
-    bnz     s2, 1b
+    minu    vl, r2, r3
+    sub     r2, r2, vl
+    stw     vz, r1, #4
+    ldea    r1, r1, vl*4
+    bnz     r2, 1b
 2:
 
 
@@ -82,33 +82,33 @@ _start:
     call    #mem_init@pc
 
     ; Add a memory pool for the XRAM (if any).
-    ldi     s1, #__xram_free_start
+    ldi     r1, #__xram_free_start
 
-    ldw     s2, s20, #XRAMSIZE
-    bz      s2, 1f
-    ldi     s3, #XRAM_START
-    sub     s3, s1, s3
-    sub     s2, s2, s3
+    ldw     r2, r20, #XRAMSIZE
+    bz      r2, 1f
+    ldi     r3, #XRAM_START
+    sub     r3, r1, r3
+    sub     r2, r2, r3
 .ifdef STACK_IN_XRAM
-    add     s2, s2, #-STACK_SIZE
+    add     r2, r2, #-STACK_SIZE
 .endif
 
-    ldi     s3, #MEM_TYPE_EXT
+    ldi     r3, #MEM_TYPE_EXT
     call    #mem_add_pool@pc
 1:
 
     ; Add a memory pool for the VRAM.
-    ldi     s1, #__vram_free_start
+    ldi     r1, #__vram_free_start
 
-    ldw     s2, s20, #VRAMSIZE
-    ldi     s3, #VRAM_START
-    sub     s3, s1, s3
-    sub     s2, s2, s3
+    ldw     r2, r20, #VRAMSIZE
+    ldi     r3, #VRAM_START
+    sub     r3, r1, r3
+    sub     r2, r2, r3
 .ifndef STACK_IN_XRAM
-    add     s2, s2, #-STACK_SIZE
+    add     r2, r2, #-STACK_SIZE
 .endif
 
-    ldi     s3, #MEM_TYPE_VIDEO
+    ldi     r3, #MEM_TYPE_VIDEO
     call    #mem_add_pool@pc
 
 
@@ -116,9 +116,9 @@ _start:
     ; Call main().
     ; ------------------------------------------------------------------------
 
-    ; s1 = argc, s2 = argv (these are invalid - don't use them!)
-    ldi     s1, #0
-    ldi     s2, #0
+    ; r1 = argc, r2 = argv (these are invalid - don't use them!)
+    ldi     r1, #0
+    ldi     r2, #0
 
     ; Jump to main().
     call    #main@pc

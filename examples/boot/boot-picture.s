@@ -51,67 +51,67 @@
 
 ;--------------------------------------------------------------------------------------------------
 ; void _boot(const void* rom_base);
-;  s1 = rom_base
+;  r1 = rom_base
 ;--------------------------------------------------------------------------------------------------
 _boot:
-    ; Store the ROM jump table address in s26.
-    mov     s26, s1
+    ; Store the ROM jump table address in r26.
+    mov     r26, r1
 
-    ; s10 = start of VRAM
-    ldi     s10, #0x40000000
+    ; r10 = start of VRAM
+    ldi     r10, #0x40000000
 
-    ldi     s9, #0x50007fff     ; Wait forever
-    stw     s9, s10, #16
+    ldi     r9, #0x50007fff     ; Wait forever
+    stw     r9, r10, #16
 
     ; Generate VCP prologue layer 1.
-    addpchi s2, #vcp_preamble@pchi
-    add     s2, s2, #vcp_preamble+4@pclo
-    add     s3, s10, #32
-    ldi     s4, #0
+    addpchi r2, #vcp_preamble@pchi
+    add     r2, r2, #vcp_preamble+4@pclo
+    add     r3, r10, #32
+    ldi     r4, #0
 1:
-    ldw     s1, s2, s4*4
-    stw     s1, s3, s4*4
-    add     s4, s4, #1
-    slt     s15, s4, #vcp_preamble_len
-    bs      s15, 1b
-    ldea    s3, s3, s4*4
+    ldw     r1, r2, r4*4
+    stw     r1, r3, r4*4
+    add     r4, r4, #1
+    slt     r15, r4, #vcp_preamble_len
+    bs      r15, 1b
+    ldea    r3, r3, r4*4
 
     ; Generate line addresses.
-    ldi     s2, #0x80000000+PIC_VADDR   ; SETREG ADDR, ...
-    ldi     s5, #0x50000000             ; WAITY ...
-    ldi     s6, #1080
-    ldi     s4, #1
+    ldi     r2, #0x80000000+PIC_VADDR   ; SETREG ADDR, ...
+    ldi     r5, #0x50000000             ; WAITY ...
+    ldi     r6, #1080
+    ldi     r4, #1
 2:
-    mul     s8, s4, s6
-    ldi     s7, #PIC_HEIGHT
-    div     s8, s8, s7          ; s8 = line to wait for
-    add     s8, s5, s8
-    stw     s2, s3, #0          ; SETREG ADDR, ...
-    stw     s8, s3, #4          ; WAITY ...
-    add     s2, s2, #PIC_VSTRIDE
-    add     s3, s3, #8
-    add     s4, s4, #1
-    sle     s15, s4, #PIC_HEIGHT
-    bs      s15, 2b
+    mul     r8, r4, r6
+    ldi     r7, #PIC_HEIGHT
+    div     r8, r8, r7          ; r8 = line to wait for
+    add     r8, r5, r8
+    stw     r2, r3, #0          ; SETREG ADDR, ...
+    stw     r8, r3, #4          ; WAITY ...
+    add     r2, r2, #PIC_VSTRIDE
+    add     r3, r3, #8
+    add     r4, r4, #1
+    sle     r15, r4, #PIC_HEIGHT
+    bs      r15, 2b
 
     ; VCP epilogue.
-    stw     s9, s3, #0          ; Wait forever
+    stw     r9, r3, #0          ; Wait forever
 
     ; Clear the frame buffer.
-    ldi     s1, #PIC_ADDR
-    ldi     s2, #PIC_ADDR+PIC_HEIGHT*PIC_STRIDE
+    ldi     r1, #PIC_ADDR
+    ldi     r2, #PIC_ADDR+PIC_HEIGHT*PIC_STRIDE
 3:
-    stw     z, s1, #0
-    add     s1, s1, #4
-    slt     s3, s1, s2
-    bs      s3, 3b
+    stw     z, r1, #0
+    add     r1, r1, #4
+    slt     r3, r1, r2
+    bs      r3, 3b
 
     ; Load the picture into the frame buffer.
-    ldi     s1, #PIC_ADDR
-    ldi     s2, #0
-    ldi     s3, #PIC_BLOCK
-    ldi     s4, #PIC_NUM_BLOCKS
-    jl      s26, #BLK_READ
+    ldi     r1, #PIC_ADDR
+    ldi     r2, #0
+    ldi     r3, #PIC_BLOCK
+    ldi     r4, #PIC_NUM_BLOCKS
+    jl      r26, #BLK_READ
 
     ; Loop forever...
 4:

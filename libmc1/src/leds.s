@@ -16,8 +16,8 @@
     .p2align 2
 
 set_leds:
-    ldhi    s2, #MMIO_START
-    stw     s1, s2, #LEDS
+    ldhi    r2, #MMIO_START
+    stw     r1, r2, #LEDS
     ret
 
 
@@ -30,18 +30,18 @@ set_leds:
     .p2align 2
 
 sevseg_print_hex:
-    ldi     s2, #glyph_lut@pc
-    ldi     s3, #MMIO_START+SEGDISP0
+    ldi     r2, #glyph_lut@pc
+    ldi     r3, #MMIO_START+SEGDISP0
 
-    ldi     s5, #8
+    ldi     r5, #8
 1$:
-    and     s4, s1, #0x0f
-    lsr     s1, s1, #4
-    ldub    s4, s2, s4
-    stw     s4, s3, #0
-    add     s3, s3, #4
-    add     s5, s5, #-1
-    bnz     s5, 1$
+    and     r4, r1, #0x0f
+    lsr     r1, r1, #4
+    ldub    r4, r2, r4
+    stw     r4, r3, #0
+    add     r3, r3, #4
+    add     r5, r5, #-1
+    bnz     r5, 1$
 
     ret
 
@@ -55,32 +55,32 @@ sevseg_print_hex:
     .p2align 2
 
 sevseg_print_dec:
-    ldi     s2, #glyph_lut@pc
-    ldi     s3, #MMIO_START+SEGDISP0
+    ldi     r2, #glyph_lut@pc
+    ldi     r3, #MMIO_START+SEGDISP0
 
     ; Determine the sign of the number.
-    slt     s7, s1, z
-    bns     s7, 4$
-    sub     s1, z, s1
-    ldi     s7, #0b1000000  ; s7 = "-" if s1 is negative
+    slt     r7, r1, z
+    bns     r7, 4$
+    sub     r1, z, r1
+    ldi     r7, #0b1000000  ; r7 = "-" if r1 is negative
 4$:
 
-    ldi     s6, #10
-    ldi     s5, #8
+    ldi     r6, #10
+    ldi     r5, #8
 1$:
-    remu    s4, s1, s6      ; s4 = 0..9
-    divu    s1, s1, s6
-    ldub    s4, s2, s4
+    remu    r4, r1, r6      ; r4 = 0..9
+    divu    r1, r1, r6
+    ldub    r4, r2, r4
 2$:
-    stw     s4, s3, #0
-    add     s3, s3, #4
-    add     s5, s5, #-1
-    bz      s5, 3$
+    stw     r4, r3, #0
+    add     r3, r3, #4
+    add     r5, r5, #-1
+    bz      r5, 3$
 
-    bnz     s1, 1$          ; Print more digits as long as the remainder != 0
+    bnz     r1, 1$          ; Print more digits as long as the remainder != 0
 
-    mov     s4, s7          ; Leftmost character is the sign (" " or "-").
-    ldi     s7, #0          ; Blank the upper digits.
+    mov     r4, r7          ; Leftmost character is the sign (" " or "-").
+    ldi     r7, #0          ; Blank the upper digits.
     b       2$
 
 3$:
@@ -96,42 +96,42 @@ sevseg_print_dec:
     .p2align 2
 
 sevseg_print:
-    ldi     s2, #glyph_lut@pc
-    ldi     s3, #MMIO_START+SEGDISP0
-    ldi     s7, #alpha_to_glyph_lut@pc
+    ldi     r2, #glyph_lut@pc
+    ldi     r3, #MMIO_START+SEGDISP0
+    ldi     r7, #alpha_to_glyph_lut@pc
 
 1$:
     ; Get next char.
-    ldub    s4, s1, #0
-    add     s1, s1, #1
-    ldi     s5, #0
-    bz      s4, 3$
+    ldub    r4, r1, #0
+    add     r1, r1, #1
+    ldi     r5, #0
+    bz      r4, 3$
 
-    slt     s6, s4, #48
-    bs      s6, 2$
-    slt     s6, s4, #58
-    bns     s6, 6$
+    slt     r6, r4, #48
+    bs      r6, 2$
+    slt     r6, r4, #58
+    bns     r6, 6$
     ; It's a numeric glyph.
-    add     s4, s4, #-48
+    add     r4, r4, #-48
     b       7$
 
 6$:
-    slt     s6, s4, #65
-    bs      s6, 2$
-    slt     s6, s4, #91
-    bns     s6, 2$
+    slt     r6, r4, #65
+    bs      r6, 2$
+    slt     r6, r4, #91
+    bns     r6, 2$
     ; It's an alpha glyph.
-    add     s4, s4, #-65
-    ldub    s4, s7, s4
+    add     r4, r4, #-65
+    ldub    r4, r7, r4
 
 7$:
     ; Get glyph.
-    ldub    s5, s2, s4
+    ldub    r5, r2, r4
 
     ; Print glyph.
 2$:
-    stw     s5, s3, #0
-    add     s3, s3, #4      ; TODO(m): We should reverse the order...
+    stw     r5, r3, #0
+    add     r3, r3, #4      ; TODO(m): We should reverse the order...
 
     b       1$
 

@@ -37,7 +37,7 @@ VCON_COL1 = 0xffeb6d70
     .p2align 2
 
 vcon_memory_requirement:
-    ldi     s1, #VCON_VCP_SIZE+VCON_FB_SIZE
+    ldi     r1, #VCON_VCP_SIZE+VCON_FB_SIZE
     ret
 
 
@@ -54,85 +54,85 @@ vcon_init:
     stw     lr, sp, #0
 
     ; Get the native resolution of the video logic.
-    ldi     s2, #MMIO_START
-    ldw     s3, s2, #VIDWIDTH           ; s3 = native video width (e.g. 1920)
-    ldw     s4, s2, #VIDHEIGHT          ; s4 = native video height (e.g. 1080)
+    ldi     r2, #MMIO_START
+    ldw     r3, r2, #VIDWIDTH           ; r3 = native video width (e.g. 1920)
+    ldw     r4, r2, #VIDHEIGHT          ; r4 = native video height (e.g. 1080)
 
     ; Calculate the VCP and FB base addresses.
-    ; s1 = VCP base address
-    ldhi    s7, #vcon_vcp_start@hi
-    stw     s1, s7, #vcon_vcp_start@lo
+    ; r1 = VCP base address
+    ldhi    r7, #vcon_vcp_start@hi
+    stw     r1, r7, #vcon_vcp_start@lo
 
-    add     s6, s1, #VCON_VCP_SIZE      ; s6 = FB base address
-    ldhi    s7, #vcon_fb_start@hi
-    stw     s6, s7, #vcon_fb_start@lo
+    add     r6, r1, #VCON_VCP_SIZE      ; r6 = FB base address
+    ldhi    r7, #vcon_fb_start@hi
+    stw     r6, r7, #vcon_fb_start@lo
 
-    ldi     s7, #VRAM_START
-    sub     s6, s6, s7
-    lsr     s6, s6, #2                  ; s6 = FB base in video address space
+    ldi     r7, #VRAM_START
+    sub     r6, r6, r7
+    lsr     r6, r6, #2                  ; r6 = FB base in video address space
 
     ; Generate the VCP: Prologue.
-    ldi     s8, #0x010000*VCON_WIDTH
-    div     s8, s8, s3                  ; s8 = (0x010000 * VCON_WIDTH) / native width
-    ldi     s7, #0x82000000
-    or      s7, s7, s8
-    stw     s7, s1, #0                  ; SETREG  XINCR, ...
+    ldi     r8, #0x010000*VCON_WIDTH
+    div     r8, r8, r3                  ; r8 = (0x010000 * VCON_WIDTH) / native width
+    ldi     r7, #0x82000000
+    or      r7, r7, r8
+    stw     r7, r1, #0                  ; SETREG  XINCR, ...
 
-    ldi     s7, #0x84000000
-    or      s7, s7, s3
-    stw     s7, s1, #4                  ; SETREG  HSTOP, native width
+    ldi     r7, #0x84000000
+    or      r7, r7, r3
+    stw     r7, r1, #4                  ; SETREG  HSTOP, native width
 
-    ldi     s7, #0x85000005
-    stw     s7, s1, #8                  ; SETREG  CMODE, 5
+    ldi     r7, #0x85000005
+    stw     r7, r1, #8                  ; SETREG  CMODE, 5
 
-    ldi     s7, #0x86000000
-    stw     s7, s1, #12                 ; SETREG  RMODE, 0  (no dithering)
+    ldi     r7, #0x86000000
+    stw     r7, r1, #12                 ; SETREG  RMODE, 0  (no dithering)
 
-    ldi     s7, #0x60000001
-    stw     s7, s1, #16                 ; SETPAL  0, 2
+    ldi     r7, #0x60000001
+    stw     r7, r1, #16                 ; SETPAL  0, 2
 
-    ldi     s7, #VCON_COL0
-    stw     s7, s1, #20                 ; COLOR 0
+    ldi     r7, #VCON_COL0
+    stw     r7, r1, #20                 ; COLOR 0
 
-    ldi     s7, #VCON_COL1
-    stw     s7, s1, #24                 ; COLOR 1
+    ldi     r7, #VCON_COL1
+    stw     r7, r1, #24                 ; COLOR 1
 
-    add     s7, s1, #20
-    ldhi    s8, #vcon_pal_start@hi
-    stw     s7, s8, #vcon_pal_start@lo  ; Store the palette address
+    add     r7, r1, #20
+    ldhi    r8, #vcon_pal_start@hi
+    stw     r7, r8, #vcon_pal_start@lo  ; Store the palette address
 
-    add     s1, s1, #28
+    add     r1, r1, #28
 
     ; Generate the VCP: Per row memory pointers.
-    ldi     s7, #0x80000000
-    ldi     s8, #0x50000000
-    ldi     s11, #VCON_HEIGHT
-    ldi     s9, #0
+    ldi     r7, #0x80000000
+    ldi     r8, #0x50000000
+    ldi     r11, #VCON_HEIGHT
+    ldi     r9, #0
 1$:
-    mul     s10, s9, s4
-    div     s10, s10, s11               ; s10 = y * native_height / VCON_HEIGHT
-    or      s10, s8, s10
-    stw     s10, s1, #0                 ; WAITY   y * native_height / VCON_HEIGHT
-    add     s9, s9, #1
+    mul     r10, r9, r4
+    div     r10, r10, r11               ; r10 = y * native_height / VCON_HEIGHT
+    or      r10, r8, r10
+    stw     r10, r1, #0                 ; WAITY   y * native_height / VCON_HEIGHT
+    add     r9, r9, #1
 
-    add     s10, s7, s6
-    stw     s10, s1, #4                 ; SETREG  ADDR, ...
-    add     s6, s6, #VCON_COLS/4
+    add     r10, r7, r6
+    stw     r10, r1, #4                 ; SETREG  ADDR, ...
+    add     r6, r6, #VCON_COLS/4
 
-    add     s1, s1, #8
+    add     r1, r1, #8
 
-    seq     s10, s9, #VCON_HEIGHT
-    bns     s10, 1$
+    seq     r10, r9, #VCON_HEIGHT
+    bns     r10, 1$
 
     ; Generate the VCP: Epilogue.
-    ldi     s7, #0x50007fff
-    stw     s7, s1, #0                  ; WAITY  32767
+    ldi     r7, #0x50007fff
+    stw     r7, r1, #0                  ; WAITY  32767
 
     ; Clear the screen.
     bl      vcon_clear
 
     ; Activate the vconsole VCP.
-    ldi     s2, #1                      ; LAYER_1
+    ldi     r2, #1                      ; LAYER_1
     bl      vcon_show
 
     ldw     lr, sp, #0
@@ -150,23 +150,23 @@ vcon_init:
 
 vcon_show:
     ; Valid layer (i.e. in the range [1, 2])?
-    add     s2, s1, #-1
-    sleu    s2, s2, #1
-    bns     s2, 1$
+    add     r2, r1, #-1
+    sleu    r2, r2, #1
+    bns     r2, 1$
 
     ; Get the VCP start address.
-    ldhi    s2, #vcon_vcp_start@hi
-    ldw     s2, s2, #vcon_vcp_start@lo
-    bz      s2, 1$
+    ldhi    r2, #vcon_vcp_start@hi
+    ldw     r2, r2, #vcon_vcp_start@lo
+    bz      r2, 1$
 
     ; Convert the address to the VCP address space.
-    ldi     s3, #VRAM_START
-    sub     s2, s2, s3
-    lsr     s2, s2, #2          ; s2 = (vcon_vcp_start - VRAM_START) / 4
+    ldi     r3, #VRAM_START
+    sub     r2, r2, r3
+    lsr     r2, r2, #2          ; r2 = (vcon_vcp_start - VRAM_START) / 4
 
     ; Emit a JMP instruction for the selected layer.
-    lsl     s1, s1, #4          ; Layer VCP start = VRAM_START + layer * 16
-    stw     s2, s3, s1
+    lsl     r1, r1, #4          ; Layer VCP start = VRAM_START + layer * 16
+    stw     r2, r3, r1
 1$:
     ret
 
@@ -181,16 +181,16 @@ vcon_show:
 
 vcon_clear:
     ; Clear the col, row coordinate.
-    ldhi    s1, #vcon_col@hi
-    stw     z, s1, #vcon_col@lo
-    ldhi    s1, #vcon_row@hi
-    stw     z, s1, #vcon_row@lo
+    ldhi    r1, #vcon_col@hi
+    stw     z, r1, #vcon_col@lo
+    ldhi    r1, #vcon_row@hi
+    stw     z, r1, #vcon_row@lo
 
     ; Clear the frame buffer.
-    ldhi    s1, #vcon_fb_start@hi
-    ldw     s1, s1, #vcon_fb_start@lo
-    ldi     s2, #0
-    ldi     s3, #VCON_FB_SIZE
+    ldhi    r1, #vcon_fb_start@hi
+    ldw     r1, r1, #vcon_fb_start@lo
+    ldi     r2, #0
+    ldi     r3, #VCON_FB_SIZE
 
     b       memset
 
@@ -204,10 +204,10 @@ vcon_clear:
     .p2align 2
 
 vcon_set_colors:
-    ldhi    s3, #vcon_pal_start@hi
-    ldw     s3, s3, #vcon_pal_start@lo
-    stw     s1, s3, #0
-    stw     s2, s3, #4
+    ldhi    r3, #vcon_pal_start@hi
+    ldw     r3, r3, #vcon_pal_start@lo
+    stw     r1, r3, #0
+    stw     r2, r3, #4
 
     ret
 
@@ -221,111 +221,111 @@ vcon_set_colors:
     .p2align 2
 
 vcon_print:
-    mov     s10, vl                     ; Preserve vl (without using the stack)
+    mov     r10, vl                     ; Preserve vl (without using the stack)
 
-    ldi     s2, #mc1_font_8x8@pc        ; s2 = font
+    ldi     r2, #mc1_font_8x8@pc        ; r2 = font
 
-    ldhi    s3, #vcon_col@hi
-    ldw     s3, s3, #vcon_col@lo        ; s3 = col
+    ldhi    r3, #vcon_col@hi
+    ldw     r3, r3, #vcon_col@lo        ; r3 = col
 
-    ldhi    s4, #vcon_row@hi
-    ldw     s4, s4, #vcon_row@lo        ; s4 = row
+    ldhi    r4, #vcon_row@hi
+    ldw     r4, r4, #vcon_row@lo        ; r4 = row
 
-    ldhi    s8, #vcon_fb_start@hi
-    ldw     s8, s8, #vcon_fb_start@lo   ; s8 = frame buffer start
+    ldhi    r8, #vcon_fb_start@hi
+    ldw     r8, r8, #vcon_fb_start@lo   ; r8 = frame buffer start
 
 1$:
-    ldub    s5, s1, #0
-    add     s1, s1, #1
-    bz      s5, 2$
+    ldub    r5, r1, #0
+    add     r1, r1, #1
+    bz      r5, 2$
 
     ; New line (LF)?
-    seq     s6, s5, #10
-    bs      s6, 3$
+    seq     r6, r5, #10
+    bs      r6, 3$
 
     ; Carriage return (CR)?
-    seq     s6, s5, #13
-    bns     s6, 4$
-    ldi     s3, #0
+    seq     r6, r5, #13
+    bns     r6, 4$
+    ldi     r3, #0
     b       1$
 
 4$:
     ; Tab?
-    seq     s6, s5, #9
-    bns     s6, 5$
-    add     s3, s3, #8
-    and     s3, s3, #~7
-    slt     s6, s3, #VCON_COLS
-    bs      s6, 1$
+    seq     r6, r5, #9
+    bns     r6, 5$
+    add     r3, r3, #8
+    and     r3, r3, #~7
+    slt     r6, r3, #VCON_COLS
+    bs      r6, 1$
     b       3$
 
 5$:
     ; Printable char.
-    max     s5, s5, #32
-    min     s5, s5, #127
+    max     r5, r5, #32
+    min     r5, r5, #127
 
-    add     s5, s5, #-32
-    ldea    s5, s2, s5*8                ; s5 = start of glyph
+    add     r5, r5, #-32
+    ldea    r5, r2, r5*8                ; r5 = start of glyph
 
     ; Copy glyph (8 bytes) from the font to the frame buffer.
     ldi     vl, #8
-    ldi     s7, #VCON_COLS
-    mul     s6, s4, s7
-    ldub    v1, s5, #1                  ; Load entire glyph (8 bytes)
-    ldea    s6, s3, s6*8
-    add     s6, s8, s6                  ; s6 = FB + col + (row * VCON_COLS * 8)
-    stb     v1, s6, s7                  ; Store glyph with stride = VCON_COLS
+    ldi     r7, #VCON_COLS
+    mul     r6, r4, r7
+    ldub    v1, r5, #1                  ; Load entire glyph (8 bytes)
+    ldea    r6, r3, r6*8
+    add     r6, r8, r6                  ; r6 = FB + col + (row * VCON_COLS * 8)
+    stb     v1, r6, r7                  ; Store glyph with stride = VCON_COLS
 
-    add     s3, s3, #1
-    slt     s5, s3, #VCON_COLS
-    bs      s5, 1$
+    add     r3, r3, #1
+    slt     r5, r3, #VCON_COLS
+    bs      r5, 1$
 
 3$:
     ; New line
-    ldi     s3, #0
-    add     s4, s4, #1
-    slt     s5, s4, #VCON_ROWS
-    bs      s5, 1$
+    ldi     r3, #0
+    add     r4, r4, #1
+    slt     r5, r4, #VCON_ROWS
+    bs      r5, 1$
 
     ; End of frame buffer.
-    ldi     s4, #VCON_ROWS-1
+    ldi     r4, #VCON_ROWS-1
 
     ; Scroll screen up one row.
 
     ; 1) Move entire frame buffer.
-    ; Clobbered registers: s5, s6, s7, s9
-    add     s7, s8, #VCON_COLS*8        ; s7 = source (start of FB + one row)
-    mov     s9, s8                      ; s9 = target (start of FB)
-    cpuid   s5, z, z
-    ldi     s6, #(VCON_COLS*8 * (VCON_ROWS-1)) / 4  ; Number of words to move
+    ; Clobbered registers: r5, r6, r7, r9
+    add     r7, r8, #VCON_COLS*8        ; r7 = source (start of FB + one row)
+    mov     r9, r8                      ; r9 = target (start of FB)
+    cpuid   r5, z, z
+    ldi     r6, #(VCON_COLS*8 * (VCON_ROWS-1)) / 4  ; Number of words to move
 6$:
-    min     vl, s5, s6
-    sub     s6, s6, vl
-    ldw     v1, s7, #4
-    ldea    s7, s7, vl*4
-    stw     v1, s9, #4
-    ldea    s9, s9, vl*4
-    bnz     s6, 6$
+    min     vl, r5, r6
+    sub     r6, r6, vl
+    ldw     v1, r7, #4
+    ldea    r7, r7, vl*4
+    stw     v1, r9, #4
+    ldea    r9, r9, vl*4
+    bnz     r6, 6$
 
-    ; 2) Clear last row (continue writing at s9 and forward).
-    ldi     s6, #(VCON_COLS*8) / 4      ; Number of words to clear
+    ; 2) Clear last row (continue writing at r9 and forward).
+    ldi     r6, #(VCON_COLS*8) / 4      ; Number of words to clear
 7$:
-    min     vl, s5, s6
-    sub     s6, s6, vl
-    stw     vz, s9, #4
-    ldea    s9, s9, vl*4
-    bnz     s6, 7$
+    min     vl, r5, r6
+    sub     r6, r6, vl
+    stw     vz, r9, #4
+    ldea    r9, r9, vl*4
+    bnz     r6, 7$
 
     b       1$
 
 2$:
-    ldhi    s5, #vcon_col@hi
-    stw     s3, s5, #vcon_col@lo
+    ldhi    r5, #vcon_col@hi
+    stw     r3, r5, #vcon_col@lo
 
-    ldhi    s5, #vcon_row@hi
-    stw     s4, s5, #vcon_row@lo
+    ldhi    r5, #vcon_row@hi
+    stw     r4, r5, #vcon_row@lo
 
-    mov     vl, s10                     ; Restore vl
+    mov     vl, r10                     ; Restore vl
     ret
 
 
@@ -342,19 +342,19 @@ vcon_print_hex:
     stw     lr, sp, #12
 
     ; Build an ASCII string on the stack.
-    ldi     s4, #hex_to_ascii@pc
-    ldi     s2, #8
-    stb     z, sp, s2           ; Zero termination
+    ldi     r4, #hex_to_ascii@pc
+    ldi     r2, #8
+    stb     z, sp, r2           ; Zero termination
 1$:
-    and     s3, s1, #0x0f
-    ldub    s3, s4, s3
-    add     s2, s2, #-1
-    lsr     s1, s1, #4
-    stb     s3, sp, s2
-    bgt     s2, 1$
+    and     r3, r1, #0x0f
+    ldub    r3, r4, r3
+    add     r2, r2, #-1
+    lsr     r1, r1, #4
+    stb     r3, sp, r2
+    bgt     r2, 1$
 
     ; Call the regular printing routine.
-    mov     s1, sp
+    mov     r1, sp
     bl      vcon_print
 
     ldw     lr, sp, #12
@@ -375,34 +375,34 @@ vcon_print_dec:
     stw     lr, sp, #12
 
     ; Build an ASCII string on the stack.
-    ldi     s4, #hex_to_ascii@pc
-    ldi     s2, #11
-    stb     z, sp, s2           ; Zero termination
+    ldi     r4, #hex_to_ascii@pc
+    ldi     r2, #11
+    stb     z, sp, r2           ; Zero termination
 
-    ldi     s6, #10
+    ldi     r6, #10
 
     ; Negative?
-    slt     s5, s1, z
-    bns     s5, 1$
-    sub     s1, z, s1
+    slt     r5, r1, z
+    bns     r5, 1$
+    sub     r1, z, r1
 
 1$:
-    remu    s3, s1, s6
-    add     s2, s2, #-1
-    ldub    s3, s4, s3
-    divu    s1, s1, s6
-    stb     s3, sp, s2
-    bnz     s1, 1$
+    remu    r3, r1, r6
+    add     r2, r2, #-1
+    ldub    r3, r4, r3
+    divu    r1, r1, r6
+    stb     r3, sp, r2
+    bnz     r1, 1$
 
     ; Prepend a minus sign?
-    bns     s5, 2$
-    ldi     s3, #45             ; Minus sign (-)
-    add     s2, s2, #-1
-    stb     s3, sp, s2
+    bns     r5, 2$
+    ldi     r3, #45             ; Minus sign (-)
+    add     r2, r2, #-1
+    stb     r3, sp, r2
 
 2$:
     ; Call the regular printing routine.
-    ldea    s1, sp, s2
+    ldea    r1, sp, r2
     bl      vcon_print
 
     ldw     lr, sp, #12
@@ -421,16 +421,16 @@ vcon_print_dec:
 vcon_putc:
     add     sp, sp, #-12
     stw     lr, sp, #4
-    stw     s1, sp, #8
+    stw     r1, sp, #8
 
     ; Store the character as a string on the stack and call vcon_print.
-    stb     s1, sp, #0
+    stb     r1, sp, #0
     stb     z, sp, #1
-    mov     s1, sp
+    mov     r1, sp
     bl      vcon_print
 
     ldw     lr, sp, #4
-    ldw     s1, sp, #8
+    ldw     r1, sp, #8
     add     sp, sp, #12
     ret
 

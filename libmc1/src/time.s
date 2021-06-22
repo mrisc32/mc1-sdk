@@ -15,23 +15,23 @@
     .p2align 2
 
 msleep:
-    ble     s1, 3$
+    ble     r1, 3$
 
-    ldi     s3, #MMIO_START
-    ldw     s3, s3, #CPUCLK
-    add     s3, s3, #500
-    ldi     s4, #1000
-    divu    s3, s3, s4          ; s3 = clock cycles / ms
+    ldi     r3, #MMIO_START
+    ldw     r3, r3, #CPUCLK
+    add     r3, r3, #500
+    ldi     r4, #1000
+    divu    r3, r3, r4          ; r3 = clock cycles / ms
 
 1$:
     ; This busy loop takes 1 ms on an MRISC32-A1 (2 cycle per iteration).
-    lsr     s2, s3, #1
+    lsr     r2, r3, #1
 2$:
-    add     s2, s2, #-1
-    bnz     s2, 2$
+    add     r2, r2, #-1
+    bnz     r2, 2$
 
-    add     s1, s1, #-1
-    bnz     s1, 1$
+    add     r1, r1, #-1
+    bnz     r1, 1$
 
 3$:
     ret
