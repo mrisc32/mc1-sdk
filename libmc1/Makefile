@@ -20,7 +20,8 @@
 
 OUT = out
 
-CFLAGS_COMMON = -c -I include -O3 -ffast-math -Wall -Wextra -Wshadow -pedantic -Werror -MMD -MP
+CFLAGS_OPT    = -O3
+CFLAGS_COMMON = -c $(CFLAGS_OPT) -ffast-math -I include -Wall -Wextra -Wshadow -pedantic -Werror -MMD -MP
 
 CC       = mrisc32-elf-gcc
 CCFLAGS  = $(CFLAGS_COMMON) -std=c11
