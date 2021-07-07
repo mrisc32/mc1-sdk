@@ -61,7 +61,7 @@ _boot:
     ldi     r10, #0x40000000
 
     ldi     r9, #0x50007fff     ; Wait forever
-    stw     r9, r10, #16
+    stw     r9, [r10, #16]
 
     ; Generate VCP prologue layer 1.
     addpchi r2, #vcp_preamble@pchi
@@ -69,12 +69,12 @@ _boot:
     add     r3, r10, #32
     ldi     r4, #0
 1:
-    ldw     r1, r2, r4*4
-    stw     r1, r3, r4*4
+    ldw     r1, [r2, r4*4]
+    stw     r1, [r3, r4*4]
     add     r4, r4, #1
     slt     r15, r4, #vcp_preamble_len
     bs      r15, 1b
-    ldea    r3, r3, r4*4
+    ldea    r3, [r3, r4*4]
 
     ; Generate line addresses.
     ldi     r2, #0x80000000+PIC_VADDR   ; SETREG ADDR, ...
@@ -86,8 +86,8 @@ _boot:
     ldi     r7, #PIC_HEIGHT
     div     r8, r8, r7          ; r8 = line to wait for
     add     r8, r5, r8
-    stw     r2, r3, #0          ; SETREG ADDR, ...
-    stw     r8, r3, #4          ; WAITY ...
+    stw     r2, [r3, #0]        ; SETREG ADDR, ...
+    stw     r8, [r3, #4]        ; WAITY ...
     add     r2, r2, #PIC_VSTRIDE
     add     r3, r3, #8
     add     r4, r4, #1
@@ -95,13 +95,13 @@ _boot:
     bs      r15, 2b
 
     ; VCP epilogue.
-    stw     r9, r3, #0          ; Wait forever
+    stw     r9, [r3]            ; Wait forever
 
     ; Clear the frame buffer.
     ldi     r1, #PIC_ADDR
     ldi     r2, #PIC_ADDR+PIC_HEIGHT*PIC_STRIDE
 3:
-    stw     z, r1, #0
+    stw     z, [r1]
     add     r1, r1, #4
     slt     r3, r1, r2
     bs      r3, 3b

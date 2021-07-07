@@ -16,8 +16,8 @@
     .p2align 2
 
 set_leds:
-    ldhi    r2, #MMIO_START
-    stw     r1, r2, #LEDS
+    ldi     r2, #MMIO_START
+    stw     r1, [r2, #LEDS]
     ret
 
 
@@ -37,8 +37,8 @@ sevseg_print_hex:
 1$:
     and     r4, r1, #0x0f
     lsr     r1, r1, #4
-    ldub    r4, r2, r4
-    stw     r4, r3, #0
+    ldub    r4, [r2, r4]
+    stw     r4, [r3]
     add     r3, r3, #4
     add     r5, r5, #-1
     bnz     r5, 1$
@@ -70,9 +70,9 @@ sevseg_print_dec:
 1$:
     remu    r4, r1, r6      ; r4 = 0..9
     divu    r1, r1, r6
-    ldub    r4, r2, r4
+    ldub    r4, [r2, r4]
 2$:
-    stw     r4, r3, #0
+    stw     r4, [r3, #0]
     add     r3, r3, #4
     add     r5, r5, #-1
     bz      r5, 3$
@@ -102,7 +102,7 @@ sevseg_print:
 
 1$:
     ; Get next char.
-    ldub    r4, r1, #0
+    ldub    r4, [r1]
     add     r1, r1, #1
     ldi     r5, #0
     bz      r4, 3$
@@ -122,15 +122,15 @@ sevseg_print:
     bns     r6, 2$
     ; It's an alpha glyph.
     add     r4, r4, #-65
-    ldub    r4, r7, r4
+    ldub    r4, [r7, r4]
 
 7$:
     ; Get glyph.
-    ldub    r5, r2, r4
+    ldub    r5, [r2, r4]
 
     ; Print glyph.
 2$:
-    stw     r5, r3, #0
+    stw     r5, [r3]
     add     r3, r3, #4      ; TODO(m): We should reverse the order...
 
     b       1$

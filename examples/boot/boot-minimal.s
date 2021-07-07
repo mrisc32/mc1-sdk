@@ -40,17 +40,17 @@ _boot:
 
     ; Configure VCP for layer 1 to be silent.
     ldi     r1, #0x50007fff     ; Wait forever
-    stw     r1, r10, #16
+    stw     r1, [r10, #16]
 
     ; Configure VCP for layer 2 to jump to our VCP.
     ldi     r1, #vcp@pc
     sub     r1, r1, r10
     lsr     r1, r1, #2          ; r1 = JMP vcp (in video address space)
-    stw     r1, r10, #32
+    stw     r1, [r10, #32]
 
     ; Define the frame buffer (just a horizontal bit pattern).
     ldi     r1, #0x55555555
-    stw     r1, r10, #64        ; Frame buffer @ 0x40000040
+    stw     r1, [r10, #64]      ; Frame buffer @ 0x40000040
 
     ; Loop forever.
 1:

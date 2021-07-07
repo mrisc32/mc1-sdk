@@ -18,7 +18,7 @@ msleep:
     ble     r1, 3$
 
     ldi     r3, #MMIO_START
-    ldw     r3, r3, #CPUCLK
+    ldw     r3, [r3, #CPUCLK]
     add     r3, r3, #500
     ldi     r4, #1000
     divu    r3, r3, r4          ; r3 = clock cycles / ms

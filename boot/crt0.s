@@ -47,10 +47,10 @@ _start:
 
     ldi     r20, #MMIO_START
 .ifdef STACK_IN_XRAM
-    ldw     r1, r20, #XRAMSIZE
+    ldw     r1, [r20, #XRAMSIZE]
     ldi     sp, #XRAM_START
 .else
-    ldw     r1, r20, #VRAMSIZE
+    ldw     r1, [r20, #VRAMSIZE]
     ldi     sp, #VRAM_START
 .endif
     add     sp, sp, r1              ; sp = Top of stack
@@ -69,8 +69,8 @@ _start:
 1:
     minu    vl, r2, r3
     sub     r2, r2, vl
-    stw     vz, r1, #4
-    ldea    r1, r1, vl*4
+    stw     vz, [r1, #4]
+    ldea    r1, [r1, vl*4]
     bnz     r2, 1b
 2:
 
@@ -84,7 +84,7 @@ _start:
     ; Add a memory pool for the XRAM (if any).
     ldi     r1, #__xram_free_start
 
-    ldw     r2, r20, #XRAMSIZE
+    ldw     r2, [r20, #XRAMSIZE]
     bz      r2, 1f
     ldi     r3, #XRAM_START
     sub     r3, r1, r3
@@ -100,7 +100,7 @@ _start:
     ; Add a memory pool for the VRAM.
     ldi     r1, #__vram_free_start
 
-    ldw     r2, r20, #VRAMSIZE
+    ldw     r2, [r20, #VRAMSIZE]
     ldi     r3, #VRAM_START
     sub     r3, r1, r3
     sub     r2, r2, r3
