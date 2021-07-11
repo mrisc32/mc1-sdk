@@ -20,8 +20,15 @@
 
 OUT = out
 
-CFLAGS_OPT    = -O3
-CFLAGS_COMMON = -c $(CFLAGS_OPT) -ffast-math -I include -Wall -Wextra -Wshadow -pedantic -Werror -MMD -MP
+# Default optimization flags (may be overridden by parent Makefiles).
+CFLAGS_OPT = -O3
+
+# TODO(m): Remove -Wno-array-bounds once the GCC 12 bug has been fixed upstream. This is a
+# temporary workaround to make the MMIO() macro work (i.e. access a constant address).
+# See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=101379
+CFLAGS_COMMON = -c $(CFLAGS_OPT) -ffast-math -I include \
+                -Wall -Wextra -Wshadow -Wno-array-bounds -pedantic -Werror \
+                -MMD -MP
 
 CC       = mrisc32-elf-gcc
 CCFLAGS  = $(CFLAGS_COMMON) -std=c11
