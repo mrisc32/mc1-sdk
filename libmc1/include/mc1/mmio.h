@@ -28,40 +28,41 @@ extern "C" {
 #endif
 
 // MMIO registers.
-#define CLKCNTLO   0
-#define CLKCNTHI   4
-#define CPUCLK     8
-#define VRAMSIZE   12
-#define XRAMSIZE   16
-#define VIDWIDTH   20
-#define VIDHEIGHT  24
-#define VIDFPS     28
-#define VIDFRAMENO 32
-#define VIDY       36
-#define SWITCHES   40
-#define BUTTONS    44
-#define KEYPTR     48
-#define MOUSEPOS   52
-#define MOUSEBTNS  56
-#define SDIN       60
-#define SEGDISP0   64
-#define SEGDISP1   68
-#define SEGDISP2   72
-#define SEGDISP3   76
-#define SEGDISP4   80
-#define SEGDISP5   84
-#define SEGDISP6   88
-#define SEGDISP7   92
-#define LEDS       96
-#define SDOUT      100
-#define SDWE       104
+typedef volatile struct {
+  uint32_t CLKCNTLO;
+  uint32_t CLKCNTHI;
+  uint32_t CPUCLK;
+  uint32_t VRAMSIZE;
+  uint32_t XRAMSIZE;
+  uint32_t VIDWIDTH;
+  uint32_t VIDHEIGHT;
+  uint32_t VIDFPS;
+  uint32_t VIDFRAMENO;
+  uint32_t VIDY;
+  uint32_t SWITCHES;
+  uint32_t BUTTONS;
+  uint32_t KEYPTR;
+  uint32_t MOUSEPOS;
+  uint32_t MOUSEBTNS;
+  uint32_t SDIN;
+  uint32_t SEGDISP0;
+  uint32_t SEGDISP1;
+  uint32_t SEGDISP2;
+  uint32_t SEGDISP3;
+  uint32_t SEGDISP4;
+  uint32_t SEGDISP5;
+  uint32_t SEGDISP6;
+  uint32_t SEGDISP7;
+  uint32_t LEDS;
+  uint32_t SDOUT;
+  uint32_t SDWE;
+} mmio_regs_t;
 
 // Macro for accessing MMIO registers.
 #ifdef __cplusplus
-#define MMIO(reg) \
-  *reinterpret_cast<volatile uint32_t*>(&reinterpret_cast<volatile uint8_t*>(0xc0000000)[reg])
+#define MMIO(reg) (reinterpret_cast<mmio_regs_t*>(0xc0000000)->reg)
 #else
-#define MMIO(reg) *(volatile uint32_t*)(&((volatile uint8_t*)0xc0000000)[reg])
+#define MMIO(reg) (((mmio_regs_t*)0xc0000000)->reg)
 #endif
 
 // Macro for reading the key event buffer.
