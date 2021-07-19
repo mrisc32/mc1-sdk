@@ -60,11 +60,11 @@ vcon_init:
 
     ; Calculate the VCP and FB base addresses.
     ; r1 = VCP base address
-    ldhi    r7, #vcon_vcp_start@hi
+    ldi     r7, #vcon_vcp_start@hi
     stw     r1, [r7, #vcon_vcp_start@lo]
 
     add     r6, r1, #VCON_VCP_SIZE      ; r6 = FB base address
-    ldhi    r7, #vcon_fb_start@hi
+    ldi     r7, #vcon_fb_start@hi
     stw     r6, [r7, #vcon_fb_start@lo]
 
     ldi     r7, #VRAM_START
@@ -98,7 +98,7 @@ vcon_init:
     stw     r7, [r1, #24]               ; COLOR 1
 
     add     r7, r1, #20
-    ldhi    r8, #vcon_pal_start@hi
+    ldi     r8, #vcon_pal_start@hi
     stw     r7, [r8, #vcon_pal_start@lo] ; Store the palette address
 
     add     r1, r1, #28
@@ -155,7 +155,7 @@ vcon_show:
     bns     r2, 1$
 
     ; Get the VCP start address.
-    ldhi    r2, #vcon_vcp_start@hi
+    ldi     r2, #vcon_vcp_start@hi
     ldw     r2, [r2, #vcon_vcp_start@lo]
     bz      r2, 1$
 
@@ -181,13 +181,13 @@ vcon_show:
 
 vcon_clear:
     ; Clear the col, row coordinate.
-    ldhi    r1, #vcon_col@hi
+    ldi     r1, #vcon_col@hi
     stw     z, [r1, #vcon_col@lo]
-    ldhi    r1, #vcon_row@hi
+    ldi     r1, #vcon_row@hi
     stw     z, [r1, #vcon_row@lo]
 
     ; Clear the frame buffer.
-    ldhi    r1, #vcon_fb_start@hi
+    ldi     r1, #vcon_fb_start@hi
     ldw     r1, [r1, #vcon_fb_start@lo]
     ldi     r2, #0
     ldi     r3, #VCON_FB_SIZE
@@ -204,7 +204,7 @@ vcon_clear:
     .p2align 2
 
 vcon_set_colors:
-    ldhi    r3, #vcon_pal_start@hi
+    ldi     r3, #vcon_pal_start@hi
     ldw     r3, [r3, #vcon_pal_start@lo]
     stw     r1, [r3, #0]
     stw     r2, [r3, #4]
@@ -225,13 +225,13 @@ vcon_print:
 
     ldi     r2, #mc1_font_8x8@pc        ; r2 = font
 
-    ldhi    r3, #vcon_col@hi
+    ldi     r3, #vcon_col@hi
     ldw     r3, [r3, #vcon_col@lo]      ; r3 = col
 
-    ldhi    r4, #vcon_row@hi
+    ldi     r4, #vcon_row@hi
     ldw     r4, [r4, #vcon_row@lo]      ; r4 = row
 
-    ldhi    r8, #vcon_fb_start@hi
+    ldi     r8, #vcon_fb_start@hi
     ldw     r8, [r8, #vcon_fb_start@lo] ; r8 = frame buffer start
 
 1$:
@@ -319,10 +319,10 @@ vcon_print:
     b       1$
 
 2$:
-    ldhi    r5, #vcon_col@hi
+    ldi     r5, #vcon_col@hi
     stw     r3, [r5, #vcon_col@lo]
 
-    ldhi    r5, #vcon_row@hi
+    ldi     r5, #vcon_row@hi
     stw     r4, [r5, #vcon_row@lo]
 
     mov     vl, r10                     ; Restore vl
