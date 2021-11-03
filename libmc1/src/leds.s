@@ -65,11 +65,10 @@ sevseg_print_dec:
     ldi     r7, #0b1000000  ; r7 = "-" if r1 is negative
 4$:
 
-    ldi     r6, #10
     ldi     r5, #8
 1$:
-    remu    r4, r1, r6      ; r4 = 0..9
-    divu    r1, r1, r6
+    remu    r4, r1, #10     ; r4 = 0..9
+    divu    r1, r1, #10
     ldub    r4, [r2, r4]
 2$:
     stw     r4, [r3, #0]

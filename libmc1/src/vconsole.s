@@ -106,11 +106,10 @@ vcon_init:
     ; Generate the VCP: Per row memory pointers.
     ldi     r7, #0x80000000
     ldi     r8, #0x50000000
-    ldi     r11, #VCON_HEIGHT
     ldi     r9, #0
 1$:
     mul     r10, r9, r4
-    div     r10, r10, r11               ; r10 = y * native_height / VCON_HEIGHT
+    div     r10, r10, #VCON_HEIGHT      ; r10 = y * native_height / VCON_HEIGHT
     or      r10, r8, r10
     stw     r10, [r1, #0]               ; WAITY   y * native_height / VCON_HEIGHT
     add     r9, r9, #1
@@ -269,12 +268,11 @@ vcon_print:
 
     ; Copy glyph (8 bytes) from the font to the frame buffer.
     ldi     vl, #8
-    ldi     r7, #VCON_COLS
-    mul     r6, r4, r7
+    mul     r6, r4, #VCON_COLS
     ldub    v1, [r5, #1]                ; Load entire glyph (8 bytes)
     ldea    r6, [r3, r6*8]
     add     r6, r8, r6                  ; r6 = FB + col + (row * VCON_COLS * 8)
-    stb     v1, [r6, r7]                ; Store glyph with stride = VCON_COLS
+    stb     v1, [r6, #VCON_COLS]        ; Store glyph with stride = VCON_COLS
 
     add     r3, r3, #1
     slt     r5, r3, #VCON_COLS
@@ -379,18 +377,16 @@ vcon_print_dec:
     ldi     r2, #11
     stb     z, [sp, r2]         ; Zero termination
 
-    ldi     r6, #10
-
     ; Negative?
     slt     r5, r1, z
     bns     r5, 1$
     sub     r1, z, r1
 
 1$:
-    remu    r3, r1, r6
+    remu    r3, r1, #10
     add     r2, r2, #-1
     ldub    r3, [r4, r3]
-    divu    r1, r1, r6
+    divu    r1, r1, #10
     stb     r3, [sp, r2]
     bnz     r1, 1$
 
