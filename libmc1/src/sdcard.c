@@ -197,56 +197,47 @@ static uint32_t _sdcard_receive_byte_fast(void) {
   uint32_t byte;
   uint32_t tmp;
   __asm__ volatile(
-      "   stw   %[sck_lo], %[mmio], #100\n"  // MMIO(SDOUT) = sck_lo
+      "   stw   %[sck_lo], [%[mmio], #100]\n"  // MMIO(SDOUT) = sck_lo
       "   nop\n"
-      "   nop\n"
-      "   stw   %[sck_hi], %[mmio], #100\n"  // MMIO(SDOUT) = sck_hi
-      "   ldw   %[byte], %[mmio], #60\n"     // byte = MMIO(SDIN) (bit #0 is MISO)
+      "   stw   %[sck_hi], [%[mmio], #100]\n"  // MMIO(SDOUT) = sck_hi
+      "   ldw   %[byte], [%[mmio], #60]\n"     // byte = MMIO(SDIN) (bit #0 is MISO)
 
-      "   stw   %[sck_lo], %[mmio], #100\n"
+      "   stw   %[sck_lo], [%[mmio], #100]\n"
       "   mkbf  %[byte], %[byte], #<7:1>\n"
-      "   nop\n"
-      "   stw   %[sck_hi], %[mmio], #100\n"
-      "   ldw   %[tmp], %[mmio], #60\n"
+      "   stw   %[sck_hi], [%[mmio], #100]\n"
+      "   ldw   %[tmp], [%[mmio], #60]\n"
 
-      "   stw   %[sck_lo], %[mmio], #100\n"
-      "   mkbf  %[tmp], %[tmp], #<6:1>\n"
-      "   or    %[byte], %[byte], %[tmp]\n"
-      "   stw   %[sck_hi], %[mmio], #100\n"
-      "   ldw   %[tmp], %[mmio], #60\n"
+      "   stw   %[sck_lo], [%[mmio], #100]\n"
+      "   ibf   %[byte], %[tmp], #<6:1>\n"
+      "   stw   %[sck_hi], [%[mmio], #100]\n"
+      "   ldw   %[tmp], [%[mmio], #60]\n"
 
-      "   stw   %[sck_lo], %[mmio], #100\n"
-      "   mkbf  %[tmp], %[tmp], #<5:1>\n"
-      "   or    %[byte], %[byte], %[tmp]\n"
-      "   stw   %[sck_hi], %[mmio], #100\n"
-      "   ldw   %[tmp], %[mmio], #60\n"
+      "   stw   %[sck_lo], [%[mmio], #100]\n"
+      "   ibf   %[byte], %[tmp], #<5:1>\n"
+      "   stw   %[sck_hi], [%[mmio], #100]\n"
+      "   ldw   %[tmp], [%[mmio], #60]\n"
 
-      "   stw   %[sck_lo], %[mmio], #100\n"
-      "   mkbf  %[tmp], %[tmp], #<4:1>\n"
-      "   or    %[byte], %[byte], %[tmp]\n"
-      "   stw   %[sck_hi], %[mmio], #100\n"
-      "   ldw   %[tmp], %[mmio], #60\n"
+      "   stw   %[sck_lo], [%[mmio], #100]\n"
+      "   ibf   %[byte], %[tmp], #<4:1>\n"
+      "   stw   %[sck_hi], [%[mmio], #100]\n"
+      "   ldw   %[tmp], [%[mmio], #60]\n"
 
-      "   stw   %[sck_lo], %[mmio], #100\n"
-      "   mkbf  %[tmp], %[tmp], #<3:1>\n"
-      "   or    %[byte], %[byte], %[tmp]\n"
-      "   stw   %[sck_hi], %[mmio], #100\n"
-      "   ldw   %[tmp], %[mmio], #60\n"
+      "   stw   %[sck_lo], [%[mmio], #100]\n"
+      "   ibf   %[byte], %[tmp], #<3:1>\n"
+      "   stw   %[sck_hi], [%[mmio], #100]\n"
+      "   ldw   %[tmp], [%[mmio], #60]\n"
 
-      "   stw   %[sck_lo], %[mmio], #100\n"
-      "   mkbf  %[tmp], %[tmp], #<2:1>\n"
-      "   or    %[byte], %[byte], %[tmp]\n"
-      "   stw   %[sck_hi], %[mmio], #100\n"
-      "   ldw   %[tmp], %[mmio], #60\n"
+      "   stw   %[sck_lo], [%[mmio], #100]\n"
+      "   ibf   %[byte], %[tmp], #<2:1>\n"
+      "   stw   %[sck_hi], [%[mmio], #100]\n"
+      "   ldw   %[tmp], [%[mmio], #60]\n"
 
-      "   stw   %[sck_lo], %[mmio], #100\n"
-      "   mkbf  %[tmp], %[tmp], #<1:1>\n"
-      "   or    %[byte], %[byte], %[tmp]\n"
-      "   stw   %[sck_hi], %[mmio], #100\n"
-      "   ldw   %[tmp], %[mmio], #60\n"
+      "   stw   %[sck_lo], [%[mmio], #100]\n"
+      "   ibf   %[byte], %[tmp], #<1:1>\n"
+      "   stw   %[sck_hi], [%[mmio], #100]\n"
+      "   ldw   %[tmp], [%[mmio], #60]\n"
 
-      "   and   %[tmp], %[tmp], #1\n"
-      "   or    %[byte], %[byte], %[tmp]\n"
+      "   ibf   %[byte], %[tmp], #<0:1>\n"
       : [ byte ] "=r"(byte), [ tmp ] "=&r"(tmp)
       : [ sck_hi ] "r"(sck_hi), [ sck_lo ] "r"(sck_lo), [ mmio ] "r"(mmio));
 #else
