@@ -294,7 +294,7 @@ vcon_print:
     ; Clobbered registers: r5, r6, r7, r9
     add     r7, r8, #VCON_COLS*8        ; r7 = source (start of FB + one row)
     mov     r9, r8                      ; r9 = target (start of FB)
-    cpuid   r5, z, z
+    getsr   r5, #0x10
     ldi     r6, #(VCON_COLS*8 * (VCON_ROWS-1)) / 4  ; Number of words to move
 6$:
     min     vl, r5, r6

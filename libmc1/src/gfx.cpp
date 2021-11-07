@@ -109,7 +109,7 @@ void gfx_fill_rect_internal(fb_t* fb,
   uint32_t* ptr;
   uint32_t tmp;
   __asm volatile(
-      "cpuid   vl, z, z\n\t"
+      "getsr   vl, #0x10\n\t"
       "mov     v1, %[color]\n"
 
       "1:\n\t"

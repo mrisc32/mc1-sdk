@@ -65,9 +65,9 @@ _start:
     lsr     r2, r2, #2      ; BSS size is always a multiple of 4 bytes.
 
     ldi     r1, #__bss_start
-    cpuid   r3, z, z
+    getsr   vl, #0x10
 1:
-    minu    vl, r2, r3
+    minu    vl, vl, r2
     sub     r2, r2, vl
     stw     vz, [r1, #4]
     ldea    r1, [r1, vl*4]
