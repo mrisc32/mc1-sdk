@@ -192,7 +192,7 @@ static uint32_t _sdcard_receive_byte_fast(void) {
   uint32_t sck_hi = SD_MOSI_BIT | SD_SCK_BIT;  // MOSI high, CS* low, SCK high
   uint32_t sck_lo = SD_MOSI_BIT;               // MOSI high, CS* low, SCK low
 #ifdef __MRISC32__
-  // This assembler optimized routine takes five CPU clock cycles per bit, with a 40:60 SCK cycle.
+  // This assembler optimized routine takes four CPU clock cycles per bit.
   uint32_t mmio = 0xc0000000;
   uint32_t byte;
   uint32_t tmp;
