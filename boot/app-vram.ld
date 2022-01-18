@@ -37,7 +37,7 @@ __app_start  = __vram_start; /* Start address for the application. */
 SECTIONS
 {
     /* --------------------------------------------------------------------- */
-    /* Put code and data after each other.                                   */
+    /* Code.                                                                 */
     /* --------------------------------------------------------------------- */
 
     . = __app_start;
@@ -46,7 +46,44 @@ SECTIONS
     {
         *(.text.start)  /* Ensure that the _start() function is placed first */
         *(.text*)
+        KEEP (*(SORT_NONE(.init)))
+        KEEP (*(SORT_NONE(.fini)))
     }
+
+    . = ALIGN(32);
+    .ctor :
+    {
+        __CTOR_START = .;
+        KEEP (*crtbegin.o(.ctors))
+        KEEP (*crtbegin?.o(.ctors))
+        KEEP (*(EXCLUDE_FILE (*crtend.o *crtend?.o) .ctors))
+        KEEP (*(SORT(.ctors.*)))
+        KEEP (*(.ctors))
+        __CTOR_END = .;
+    }
+
+    . = ALIGN(32);
+    .dtor :
+    {
+        __DTOR_START = .;
+        KEEP (*crtbegin.o(.dtors))
+        KEEP (*crtbegin?.o(.dtors))
+        KEEP (*(EXCLUDE_FILE (*crtend.o *crtend?.o) .dtors))
+        KEEP (*(SORT(.dtors.*)))
+        KEEP (*(.dtors))
+        __DTOR_END = .;
+    }
+
+    . = ALIGN(32);
+    .eh_frame :
+    {
+        *(.eh_frame*)
+    }
+
+
+    /* --------------------------------------------------------------------- */
+    /* Data.                                                                 */
+    /* --------------------------------------------------------------------- */
 
     . = ALIGN(32);
     .rodata :
@@ -84,6 +121,7 @@ SECTIONS
         *(.scommon*)
     }
 
+    . = ALIGN(32);
     .bss (NOLOAD) :
     {
         *(.bss*)

@@ -47,16 +47,19 @@ SECTIONS
         *(.text*)
     }
 
+    . = ALIGN(4);
     .rodata :
     {
         *(.rodata*)
     }
 
+    . = ALIGN(4);
     .data :
     {
         *(.data*)
     }
 
+    . = ALIGN(4);
     .sdata :
     {
         *(.sdata*)
@@ -84,6 +87,7 @@ SECTIONS
         *(.scommon*)
     }
 
+    . = ALIGN(4);
     .bss (NOLOAD) :
     {
         *(.bss*)

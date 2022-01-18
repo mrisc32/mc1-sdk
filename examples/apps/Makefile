@@ -28,7 +28,7 @@ CFLAGS       = -O3 -c -I $(SDK_ROOT)/libmc1/include -I $(SDK_ROOT)/boot/include
 AS           = mrisc32-elf-as
 ASFLAGS      = -I $(SDK_ROOT)/libmc1/include
 LD           = mrisc32-elf-gcc
-LDFLAGS_BOOT = -T $(SDK_ROOT)/boot/boot-block.ld -mno-crt0
+LDFLAGS_BOOT = -T $(SDK_ROOT)/boot/boot-block.ld -mno-crt0 -mno-ctor-dtor
 LDFLAGS_APP  = -T $(SDK_ROOT)/boot/app-vram.ld -mno-crt0 -L $(LIBMC1_DIR)/out
 OBJCOPY      = mrisc32-elf-objcopy
 

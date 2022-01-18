@@ -22,7 +22,7 @@ SDK_HOME = ../..
 
 AS       = mrisc32-elf-as
 LD       = mrisc32-elf-gcc
-LDFLAGS  = -T $(SDK_HOME)/boot/boot-block.ld -mno-crt0
+LDFLAGS  = -T $(SDK_HOME)/boot/boot-block.ld -mno-crt0 -mno-ctor-dtor -mcmodel=small
 OBJCOPY  = mrisc32-elf-objcopy
 
 OUT      = ./out
