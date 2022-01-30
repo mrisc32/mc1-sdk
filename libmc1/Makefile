@@ -72,6 +72,7 @@ LIBMC1_OBJS = \
     $(OUT)/mc1-font-8x8.o \
     $(OUT)/mci_decode.o \
     $(OUT)/memory.o \
+    $(OUT)/mfat_mc1.o \
     $(OUT)/sdcard.o \
     $(OUT)/time.o \
     $(OUT)/vconsole.o \
