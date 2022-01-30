@@ -88,7 +88,7 @@ sevseg_print_dec:
 
 ; ----------------------------------------------------------------------------
 ; void sevseg_print(const char* text)
-; Print a decimal number to the board segment displays.
+; Print an ASCII text string to the board segment displays.
 ; ----------------------------------------------------------------------------
 
     .globl  sevseg_print
