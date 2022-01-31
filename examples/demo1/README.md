@@ -1,18 +1,19 @@
-# MC1 application examples
+# MC1 example demo
 
-This folder contains bootable application examples for the MC1 computer.
+This folder contains a bootable demo application for the MC1 computer.
 
-Run `make` to build the example applications, which will be stored as `*.img`
-files in the `out/` folder. An image can be installed on an SD card using
-[`dd`](https://linux.die.net/man/1/dd), e.g:
+## Build & Run
+
+Run `make` to build the demo, which will produce `out/demo1.elf`. Then copy the
+file to a FAT formatted SD card (be sure to call the target file `MC1BOOT.EXE`),
+e.g:
 
 ```bash
-dd if=out/demo1.img of=/dev/sdX
+make
+cp out/demo1.elf /path/to/sdcard/MC1BOOT.EXE
 ```
 
-Replace `/dev/sdX` with the SD card device.
-
-**IMPORTANT:** *Using the wrong device may corrupt the system disk on your host computer*.
+Insert the SD card into the MC1 computer and boot the computer.
 
 ## Credits
 
