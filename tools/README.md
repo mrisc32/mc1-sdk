@@ -18,10 +18,6 @@ ninja install
 
 ## Tools
 
-### mkmc1bootimage.py
-
-Create an MC1 boot image that can be installed onto an SD card.
-
 ### png2mci
 
 Convert a PNG image to an MCI image, which is suitable for the MC1 video
