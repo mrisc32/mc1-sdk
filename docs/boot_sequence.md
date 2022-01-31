@@ -1,95 +1,34 @@
 # MC1 boot sequence
 
-The MC1 first boots from ROM, which does minimal system initialization. This includes:
+The MC1 first boots from ROM, which does minimal system initialization and tries to load and run an MRISC32 ELF32 executable from a FAT volume on an SD card.
 
-* Set up a small (512 bytes) stack in RAM.
-* Initialize the boot medium device.
+## Initialization.
 
-After the initialization, the ROM boot process will try to load the boot block from a boot medium (e.g. an SD card). The block is loaded into the upper part of VRAM. Since the size of VRAM may vary, the position of the loaded boot block is not fixed. Hence, *the boot code must be position independent* (all addressing must be PC-relative).
+The ROM initialization code sets up a small (512 bytes) stack at the top of VRAM. This stack is used by all ROM routines, but once control is handed over to the boot code the stack is expected to be redefined.
 
-After successfully loading the boot code, the ROM code calls the boot code (the first word of the boot code is the call target).
+## Boot loader
 
-When the boot code is called, it is passed the following information in registers:
+The ROM code will:
 
-| Register | Contents |
-|---|---|
-| R1 | ROM base (see "ROM function table" below) |
+* Initialize an SD card device (retry until a card is inserted).
+* Mount any FAT volumes on the SD card.
+* Load `MC1BOOT.EXE` from the root folder of the first bootable FAT volume.
+* Call the entry point in the boot executable.
 
-Once the boot code has been called, it is not expected that it will return. All system control is handed over to the loaded boot code.
+Note: If none of the FAT volumes have the `boot` flag set, the first found FAT volume will be used as the boot volume.
 
-## Boot block layout
+## MC1BOOT.EXE
 
-The size of the boot block is 512 bytes, and it is stored in block 0 of the boot medium.
+The boot executable must be an MRISC32 ELF32 binary file.
 
-All integers are stored as 32-bit little endian words.
+### VRAM executable
 
-| Offset | Type | Name | Description |
-|---|---|---|---|
-| 0 | word | type | ID: 0x4231434d ("MC1B") |
-| 4 | word | checksum | crc32c checksum of the code (bytes 8..511) |
-| 8 | word[126] | code | 126 instruction/data words |
+If the boot program is to be loaded into VRAM it needs to linked such that it does *not* overwrite the ROM BSS area (see the [memory map](memory_map.md)). This is achieved by using the `app-vram.ld` linker script.
 
-## ROM function table
+Note that the size of the VRAM is limited, so only small programs can be loaded into VRAM.
 
-The ROM function table is an array of callable routines that can be useful for the boot code, as follows:
+### XRAM executable
 
-| Table offset | Name | Signature |
-|---|---|---|
-| 0 | doh | noreturn void doh(const char* message) |
-| 4 | blk_read | int blk_read(void* ptr, int device, size_t first_block, size_t num_block) |
-| 8 | crc32c | unsigned crc32c(void* ptr, size_t num_bytes) |
-| 12 | LZG_Decode | unsigned LZG_Decode(const void* in, unsigned insize, void* out, unsigned outsize) |
+If the boot program is to be loaded into XRAM it needs to linked such that it loads into XRAM. This is achieved by using the `app-xram.ld` linker script.
 
-To call a function, jump and link to the address rom_base+offset, e.g:
-
-```
-  mov r26, r1     ; r26 = rom_base
-  ...
-  jl  r26, #4     ; Call blk_read()
-```
-
-## Typical boot code
-
-It is expected that the boot code will continue to load further code and data from the boot medium and pass over control to the newly loaded program. For instance, the loaded program may use its own memory allocator and implement full file system support (whereas the ROM only provides primitive block reading functionality).
-
-Here is a simple example that loads a larger piece of code into memory and executes it:
-
-```
-  ; ROM routine table offsets.
-  DOH = 0
-  BLK_READ = 4
-  CRC32C = 8
-  LZG_DECODE = 12
-
-  ; Program address and location on the boot medium.
-  PRG_ADDRESS = 0x40000200
-  START_BLOCK = 1
-  NUM_BLOCKS = 78
-
-  .section .text.start, "ax"
-  .globl  _boot
-  .p2align 2
-
-_boot:
-  ; Store the ROM jump table address in r26.
-  mov     r26, r1
-
-  ; Read the program blocks into VRAM.
-  ldi     r16, #PRG_ADDRESS
-  mov     r1, r16
-  ldi     r2, #0
-  ldi     r3, #START_BLOCK
-  ldi     r4, #NUM_BLOCKS
-  jl      r26, #BLK_READ
-  bz      r1, fail
-
-  ; Jump to the loaded code (start the program).
-  j       r16, #0
-
-fail:
-  ldi     r1, #msg@pc
-  j       r26, #DOH        ; doh (msg) !
-
-msg:
-  .asciz  "Failed to load MyProgram"
-```
+Note that XRAM may not be available, in which case the boot will fail.
