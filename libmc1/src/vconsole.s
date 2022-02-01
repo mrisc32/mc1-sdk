@@ -85,8 +85,8 @@ vcon_init:
     ldi     r7, #0x85000005
     stw     r7, [r1, #8]                ; SETREG  CMODE, 5
 
-    ldi     r7, #0x86000000
-    stw     r7, [r1, #12]               ; SETREG  RMODE, 0  (no dithering)
+    ldi     r7, #0x86000035
+    stw     r7, [r1, #12]               ; SETREG  RMODE, 0x35 (alpha blend, no dithering)
 
     ldi     r7, #0x60000001
     stw     r7, [r1, #16]               ; SETPAL  0, 2
