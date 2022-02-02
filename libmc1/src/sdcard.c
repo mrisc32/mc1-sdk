@@ -768,7 +768,7 @@ static bool _sdcard_reset(sdctx_t* ctx) {
   _sdio_set_cs_0();
 
   // 2) Send CMD0. We try many times until we get success, or time out.
-  for (retry = 1000; retry > 0; --retry) {
+  for (retry = 50; retry > 0; --retry) {
     if (_sdcard_cmd0(ctx)) {
       break;
     }
@@ -784,7 +784,7 @@ static bool _sdcard_reset(sdctx_t* ctx) {
   }
 
   ctx->use_cmd1 = false;
-  for (retry = 10000; retry > 0; --retry) {
+  for (retry = 50; retry > 0; --retry) {
     // 4a) Send CMD55 (prefix for ACMD).
     if (!_sdcard_cmd55(ctx)) {
       goto done;
@@ -801,7 +801,7 @@ static bool _sdcard_reset(sdctx_t* ctx) {
     }
 
     // Delay a bit before the next try.
-    _sdio_sleep(PERIOD_NS(1000));
+    _sdio_sleep(PERIOD_NS(10000));
   }
   if (retry <= 0) {
     goto done;
