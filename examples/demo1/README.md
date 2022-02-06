@@ -1,6 +1,11 @@
-# MC1 example demo
+# MC1 example demo 1
 
 This folder contains a bootable demo application for the MC1 computer.
+
+## System requirements
+
+* VRAM: 256 KB
+* SD card reader
 
 ## Build & Run
 
