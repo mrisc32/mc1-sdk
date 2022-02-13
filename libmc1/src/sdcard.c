@@ -387,12 +387,18 @@ static bool _sdcard_read_data_block(sdctx_t* ctx, uint8_t* buf, size_t num_bytes
     }
   }
 
-  // Skip the trailing CRC16 (2 bytes).
-  for (int i = 0; i < 2; ++i) {
-    (void)_sdcard_receive_byte();
+  // Read the trailing CRC16 (2 bytes).
+  uint32_t crc;
+  {
+    uint8_t crc_buf[2];
+    crc_buf[0] = _sdcard_receive_byte();
+    crc_buf[1] = _sdcard_receive_byte();
+    crc = (((uint32_t)crc_buf[0]) << 8) | ((uint32_t)crc_buf[1]);
   }
 
-  return true;
+  // Check the CRC.
+  const uint32_t actual_crc = crc16(&buf[0], num_bytes);
+  return actual_crc == crc;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -554,6 +560,28 @@ static bool _sdcard_cmd58(sdctx_t* ctx) {
     ctx->is_sdhc = true;
   } else {
     ctx->is_sdhc = false;
+  }
+
+  return true;
+}
+
+static bool _sdcard_cmd59(sdctx_t* ctx) {
+  SDCARD_DEBUG("SD: Send CMD59\n");
+
+  // Send command: CRC option = 1 (i.e. enable CRC).
+  if (!_sdcard_send_cmd(59, 1)) {
+    return false;
+  }
+
+  // Get response (R1).
+  uint8_t resp[1];
+  if (!_sdcard_get_response(ctx, resp, sizeof(resp))) {
+    return false;
+  }
+
+  if (resp[0] != 0x00) {
+    SDCARD_LOG("CMD59: Unexpected response\n");
+    return false;
   }
 
   return true;
@@ -812,7 +840,12 @@ static bool _sdcard_reset(sdctx_t* ctx) {
     goto done;
   }
 
-  // 6) Send CMD9 (SEND_CSD) to determine the card size and speed.
+  // 6) Send CMD59 (CRC_ON_OFF) to enable CRC.
+  if (!_sdcard_cmd59(ctx)) {
+    goto done;
+  }
+
+  // 7) Send CMD9 (SEND_CSD) to determine the card size and speed.
   if (!_sdcard_cmd9(ctx)) {
     goto done;
   }
@@ -820,7 +853,7 @@ static bool _sdcard_reset(sdctx_t* ctx) {
     goto done;
   }
 
-  // 7) Set block size.
+  // 8) Set block size.
   if (!_sdcard_cmd16(ctx, SD_BLOCK_SIZE)) {
     goto done;
   }
@@ -895,7 +928,13 @@ bool sdcard_read(sdctx_t* ctx, void* ptr, size_t first_block, size_t num_blocks)
 
   uint8_t* buf = (uint8_t*)ptr;
   for (size_t blk = 0; blk < num_blocks; ++blk) {
-    if (!_sdcard_read_data_block(ctx, buf, SD_BLOCK_SIZE)) {
+    // Retry a couple of times in case we get CRC errors.
+    for (retry = 3; retry > 0; --retry) {
+      if (_sdcard_read_data_block(ctx, buf, SD_BLOCK_SIZE)) {
+        break;
+      }
+    }
+    if (retry == 0) {
       goto terminate;
     }
 
