@@ -28,8 +28,8 @@
 // Debug logging.
 //--------------------------------------------------------------------------------------------------
 
-//#define SDCARD_ENABLE_LOGGING
-//#define SDCARD_ENABLE_DEBUGGING
+#define SDCARD_ENABLE_LOGGING
+#define SDCARD_ENABLE_DEBUGGING
 
 #ifdef SDCARD_ENABLE_LOGGING
 static inline void _sdcard_log(const sdctx_t* ctx, const char* msg) {
@@ -39,7 +39,6 @@ static inline void _sdcard_log(const sdctx_t* ctx, const char* msg) {
   }
 }
 
-#ifdef SDCARD_ENABLE_DEBUGGING
 static void _sdcard_log_num(const sdctx_t* ctx, int x) {
   if (ctx->log_func == (sdcard_log_func_t)0) {
     return;
@@ -66,9 +65,9 @@ static void _sdcard_log_num(const sdctx_t* ctx, int x) {
 
   ctx->log_func(&buf[k]);
 }
-#endif
 
 #define SDCARD_LOG(msg) _sdcard_log(ctx, msg)
+#define SDCARD_LOG_NUM(x) _sdcard_log_num(ctx, x)
 #ifdef SDCARD_ENABLE_DEBUGGING
 #define SDCARD_DEBUG(msg) _sdcard_log(ctx, msg)
 #define SDCARD_DEBUG_NUM(x) _sdcard_log_num(ctx, x)
@@ -78,6 +77,7 @@ static void _sdcard_log_num(const sdctx_t* ctx, int x) {
 #endif
 #else
 #define SDCARD_LOG(msg) ((void)(ctx))
+#define SDCARD_LOG_NUM(x) ((void)(ctx))
 #define SDCARD_DEBUG(msg) ((void)(ctx))
 #define SDCARD_DEBUG_NUM(x) ((void)(ctx))
 #endif
@@ -357,21 +357,24 @@ static void _sdcard_dump_r1(sdctx_t* ctx, const uint8_t r) {
 #endif
 }
 
-static bool _sdcard_wait_for_token(const uint32_t token) {
-  uint32_t byte = 0xff;
-  for (int i = 0; i < 1000; ++i) {
-    byte = _sdcard_receive_byte();
-    if (byte == token) {
-      return true;
+static uint32_t _sdcard_wait_for_token(void) {
+  uint32_t received_token = 0xff;
+  for (int i = 0; i < 10000; ++i) {
+    received_token = _sdcard_receive_byte();
+    if (received_token != 0xff) {
+      break;
     }
   }
-  return false;
+  return received_token;
 }
 
 static bool _sdcard_read_data_block(sdctx_t* ctx, uint8_t* buf, size_t num_bytes) {
   // Wait for the response token.
-  if (!_sdcard_wait_for_token(0xfe)) {
-    SDCARD_LOG("SD: Read data token timeout\n");
+  uint32_t response_token = _sdcard_wait_for_token();
+  if (response_token != 0xfe) {
+    SDCARD_LOG("SD: Incorrect read data token: ");
+    SDCARD_LOG_NUM(response_token);
+    SDCARD_LOG("\n");
     return false;
   }
 
@@ -906,7 +909,7 @@ bool sdcard_read(sdctx_t* ctx, void* ptr, size_t first_block, size_t num_blocks)
   // Set the start block address and initiate read (retry with a reset if necessary).
   const uint32_t block_addr = ctx->is_sdhc ? first_block : first_block * SD_BLOCK_SIZE;
   int retry;
-  for (retry = 2; retry > 0; --retry) {
+  for (retry = 4; retry > 0; --retry) {
     if (num_blocks > 1) {
       // Use CMD18 (READ_MULTIPLE_BLOCK) when num_blocks > 1.
       if (_sdcard_cmd18(ctx, block_addr)) {
@@ -943,8 +946,11 @@ bool sdcard_read(sdctx_t* ctx, void* ptr, size_t first_block, size_t num_blocks)
 
   if (num_blocks > 1) {
     // We must wait for a read token before we can send CMD12.
-    if (!_sdcard_wait_for_token(0xfe)) {
-      SDCARD_LOG("SD: Read token timeout (CMD 12)\n");
+    uint32_t response_token = _sdcard_wait_for_token();
+    if (response_token != 0xfe) {
+      SDCARD_LOG("SD: Incorrect read data token: ");
+      SDCARD_LOG_NUM(response_token);
+      SDCARD_LOG("\n");
       goto done;
     }
 
