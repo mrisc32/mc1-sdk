@@ -73,6 +73,7 @@ LIBMC1_OBJS = \
     $(OUT)/mci_decode.o \
     $(OUT)/memory.o \
     $(OUT)/mfat_mc1.o \
+    $(OUT)/newlib_integ.o \
     $(OUT)/sdcard.o \
     $(OUT)/time.o \
     $(OUT)/vconsole.o \
