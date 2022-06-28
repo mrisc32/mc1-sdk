@@ -135,6 +135,7 @@ SECTIONS
     /* This tells the system where it can start to allocate XRAM. */
     . = ALIGN(32);
     __xram_free_start = .;
+    _end = .;
 
     /* This tells the system where it can start to allocate VRAM. */
     __vram_free_start = __vram_start;
