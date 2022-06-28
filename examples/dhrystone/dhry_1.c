@@ -15,7 +15,29 @@
  ****************************************************************************
  */
 
+
+/*
+ ****************************************************************************
+ *
+ *  The MC1 version is non-interactive, and uses a more high resolution
+ *  timer than time().
+ *
+ ****************************************************************************
+ */
+
 #include "dhry.h"
+
+#ifdef MC1
+#define GETTIMEOFDAY
+#include <mc1/mmio.h>
+#include <mc1/newlib_integ.h>
+#endif
+
+#ifdef GETTIMEOFDAY
+#undef TIME
+#undef TIMES
+#include <sys/time.h>
+#endif
 
 /* Global Variables: */
 
@@ -60,10 +82,35 @@ extern long     time();
 extern clock_t        clock();
 #define Too_Small_Time (2*HZ)
 #endif
+#ifdef GETTIMEOFDAY
+#define Too_Small_Time (50)
+static long time_diff_micros(const struct timeval* t_start,
+                             const struct timeval* t_stop)
+{
+  struct timeval dt;
+  dt.tv_sec = t_stop->tv_sec - t_start->tv_sec;
+  if (t_stop->tv_usec >= t_start->tv_usec)
+  {
+    dt.tv_usec = t_stop->tv_usec - t_start->tv_usec;
+  }
+  else
+  {
+    dt.tv_usec = 1000000L + t_stop->tv_usec - t_start->tv_usec;
+    dt.tv_sec += 1;
+  }
+  return (1000000L * (long)dt.tv_sec) + (long)dt.tv_usec;
+}
+#endif
 
+#ifdef GETTIMEOFDAY
+struct timeval  Begin_Time,
+                End_Time;
+long            User_Time;
+#else
 long            Begin_Time,
                 End_Time,
                 User_Time;
+#endif
 float           Microseconds,
                 Dhrystones_Per_Second;
 
@@ -85,6 +132,11 @@ main ()
         Str_30          Str_2_Loc;
   REG   int             Run_Index;
   REG   int             Number_Of_Runs;
+
+#ifdef MC1
+  /* MC1 specific initializations */
+  mc1newlib_init(MC1NEWLIB_ALL);
+#endif
 
   /* Initializations */
 
@@ -118,6 +170,10 @@ main ()
     printf ("Program compiled without 'register' attribute\n");
     printf ("\n");
   }
+
+#ifdef MC1
+  Number_Of_Runs = 1000000;
+#else
   printf ("Please give the number of runs through the benchmark: ");
   {
     int n;
@@ -125,6 +181,7 @@ main ()
     Number_Of_Runs = n;
   }
   printf ("\n");
+#endif
 
   printf ("Execution starts, %d runs through Dhrystone\n", Number_Of_Runs);
 
@@ -141,6 +198,9 @@ main ()
 #endif
 #ifdef MSC_CLOCK
   Begin_Time = clock();
+#endif
+#ifdef GETTIMEOFDAY
+  (void)gettimeofday(&Begin_Time, NULL);
 #endif
 
   for (Run_Index = 1; Run_Index <= Number_Of_Runs; ++Run_Index)
@@ -203,9 +263,13 @@ main ()
 #ifdef MSC_CLOCK
   End_Time = clock();
 #endif
+#ifdef GETTIMEOFDAY
+  (void)gettimeofday(&End_Time, NULL);
+#endif
 
   printf ("Execution ends\n");
   printf ("\n");
+#ifndef MC1
   printf ("Final values of the variables used in the benchmark:\n");
   printf ("\n");
   printf ("Int_Glob:            %d\n", Int_Glob);
@@ -256,8 +320,13 @@ main ()
   printf ("Str_2_Loc:           %s\n", Str_2_Loc);
   printf ("        should be:   DHRYSTONE PROGRAM, 2'ND STRING\n");
   printf ("\n");
+#endif
 
+#ifdef GETTIMEOFDAY
+  User_Time = time_diff_micros(&Begin_Time, &End_Time);
+#else
   User_Time = End_Time - Begin_Time;
+#endif
 
   if (User_Time < Too_Small_Time)
   {
@@ -267,7 +336,10 @@ main ()
   }
   else
   {
-#ifdef TIME
+#ifdef GETTIMEOFDAY
+    Microseconds = 0.001F * (float) User_Time / (float) Number_Of_Runs;
+    Dhrystones_Per_Second = 1000000.0F * (float) Number_Of_Runs / (float) User_Time;
+#elif defiend(TIME)
     Microseconds = (float) User_Time * Mic_secs_Per_Second
                         / (float) Number_Of_Runs;
     Dhrystones_Per_Second = (float) Number_Of_Runs / (float) User_Time;
@@ -278,9 +350,19 @@ main ()
                         / (float) User_Time;
 #endif
     printf ("Microseconds for one run through Dhrystone: ");
-    printf ("%6.1f \n", Microseconds);
+    printf ("%.4f \n", Microseconds);
     printf ("Dhrystones per Second:                      ");
-    printf ("%6.1f \n", Dhrystones_Per_Second);
+    printf ("%.1f \n", Dhrystones_Per_Second);
+#ifdef MC1
+    {
+      float DMIPS = Dhrystones_Per_Second / 1757.0F;
+      float CPU_MHz = 0.000001F * (float) MMIO(CPUCLK);
+      printf ("DMIPS:                                      ");
+      printf ("%.2f \n", DMIPS);
+      printf ("DMIPS/MHz:                                  ");
+      printf ("%.2f @ %.1f MHz\n", DMIPS / CPU_MHz, CPU_MHz);
+    }
+#endif
     printf ("\n");
   }
   
