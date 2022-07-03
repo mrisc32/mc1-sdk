@@ -131,7 +131,7 @@ vcon_init:
     bl      vcon_clear
 
     ; Activate the vconsole VCP.
-    ldi     r2, #1                      ; LAYER_1
+    ldi     r1, #1                      ; LAYER_1
     bl      vcon_show
 
     ldw     lr, [sp, #0]
