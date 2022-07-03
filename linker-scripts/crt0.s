@@ -145,3 +145,44 @@ _start:
 
     j       z, #0x0200
 
+
+
+; ----------------------------------------------------------------------------
+; Memory configuration override for newlib (e.g. malloc/sbrk).
+; ----------------------------------------------------------------------------
+
+    .section .text
+
+; ----------------------------------------------------------------------------
+; char* _getheapend(char* heap_start)
+; ----------------------------------------------------------------------------
+    .globl  _getheapend
+    .p2align 2
+	.type	_getheapend,@function
+
+_getheapend:
+    ldi     r2, #MMIO_START
+    sltu    r3, r1, #XRAM_START
+    bns     r3, 1f
+
+    ; Heap is in VRAM.
+    ldw     r1, [r2, #VRAMSIZE]
+    add     r1, r1, #VRAM_START
+.ifndef STACK_IN_XRAM
+    ldi     r2, #STACK_SIZE
+    sub     r1, r1, r2
+.endif
+    ret
+
+1:
+    ; Heap is in XRAM.
+    ldw     r1, [r2, #XRAMSIZE]
+    add     r1, r1, #XRAM_START
+.ifdef STACK_IN_XRAM
+    ldi     r2, #STACK_SIZE
+    sub     r1, r1, r2
+.endif
+    ret
+
+    .size   _getheapend,.-_getheapend
+
