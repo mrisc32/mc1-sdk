@@ -214,8 +214,18 @@ static int _mc1_fstat(int fd, struct stat* buf) {
 }
 
 static unsigned long long _mc1_gettimemicros(void) {
-  const uint64_t clk_cnt = (((uint64_t)MMIO(CLKCNTHI)) << 32) | (uint64_t)MMIO(CLKCNTLO);
-  // TODO(m): We could improve the precision beyond float32.
+  // Safely read the two 32-bit clock counters as a single 64-bit value.
+  uint32_t clk_lo, clk_hi, clk_hi_old;
+  clk_hi = MMIO(CLKCNTHI);
+  do {
+    clk_hi_old = clk_hi;
+    clk_lo = MMIO(CLKCNTLO);
+    clk_hi = MMIO(CLKCNTHI);
+  } while (clk_hi != clk_hi_old);
+  const uint64_t clk_cnt = (((uint64_t)clk_hi) << 32) | (uint64_t)clk_lo;
+
+  // Convert the CPU cycle count to microseconds.
+  // TODO(m): We should improve the precision beyond float32.
   return (unsigned long long)(s_microseconds_per_cycle * (float)clk_cnt);
 }
 
