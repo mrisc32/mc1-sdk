@@ -1073,6 +1073,20 @@ static void _mfat_sync_impl() {
 }
 #endif
 
+static int _mfat_fstat_impl(mfat_file_info_t* info, mfat_stat_t* stat) {
+  // Read the directory entry block (should already be in the cache).
+  mfat_cached_block_t* block = _mfat_read_block(info->dir_entry_block, MFAT_CACHE_DATA);
+  if (block == NULL) {
+    return -1;
+  }
+
+  // Extract the relevant information for this directory entry.
+  uint8_t* dir_entry = &block->buf[info->dir_entry_offset];
+  _mfat_dir_entry_to_stat(dir_entry, stat);
+
+  return 0;
+}
+
 static int _mfat_stat_impl(const char* path, mfat_stat_t* stat) {
   // Find the file in the file system structure.
   mfat_bool_t is_dir;
@@ -1084,17 +1098,7 @@ static int _mfat_stat_impl(const char* path, mfat_stat_t* stat) {
     return -1;
   }
 
-  // Read the directory entry block (should already be in the cache).
-  mfat_cached_block_t* block = _mfat_read_block(info.dir_entry_block, MFAT_CACHE_DATA);
-  if (block == NULL) {
-    return -1;
-  }
-
-  // Extract the relevant information for this directory entry.
-  uint8_t* dir_entry = &block->buf[info.dir_entry_offset];
-  _mfat_dir_entry_to_stat(dir_entry, stat);
-
-  return 0;
+  return _mfat_fstat_impl(&info, stat);
 }
 
 static int _mfat_open_impl(const char* path, int oflag) {
@@ -1457,6 +1461,20 @@ void mfat_sync(void) {
 
   _mfat_sync_impl();
 #endif
+}
+
+int mfat_fstat(int fd, mfat_stat_t* stat) {
+  if (!s_ctx.initialized) {
+    DBG("Not initialized");
+    return -1;
+  }
+
+  mfat_file_t* f = _mfat_get_file(fd);
+  if (f == NULL) {
+    return -1;
+  }
+
+  return _mfat_fstat_impl(&f->info, stat);
 }
 
 int mfat_stat(const char* path, mfat_stat_t* stat) {
