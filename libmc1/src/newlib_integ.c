@@ -144,6 +144,12 @@ static int write_block(const char* ptr, unsigned block_no, void* custom) {
   return -1;
 }
 
+static void sdcard_log_func(const char* msg) {
+  if (s_has_vcon) {
+    vcon_print(msg);
+  }
+}
+
 //--------------------------------------------------------------------------------------------------
 // POSIX vs MFAT helpers.
 //--------------------------------------------------------------------------------------------------
@@ -357,14 +363,15 @@ void mc1newlib_init(unsigned flags) {
 
   if (flags & MC1NEWLIB_SDCARD) {
     // Initialize SD-card & FAT for file I/O.
-    if (sdcard_init(&s_sdctx, NULL)) {
+    if (sdcard_init(&s_sdctx, &sdcard_log_func)) {
       s_has_sdcard = true;
       if (mfat_mount(&read_block, &write_block, &s_sdctx) == 0) {
         s_has_fat = true;
+      } else if (s_has_vcon) {
+          vcon_print("*** Unable to mount FAT partition.\n");
       }
-    }
-    if (s_has_vcon && !s_has_fat) {
-      vcon_print("ERROR: Unable to mount FAT partition.\n");
+    } else if (s_has_vcon) {
+      vcon_print("*** Unable to init SD card.\n");
     }
   }
 }
