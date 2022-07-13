@@ -155,13 +155,28 @@ static void sdcard_log_func(const char* msg) {
 //--------------------------------------------------------------------------------------------------
 
 static int _posix_open_flags_to_mfat(int flags) {
-  int mfat_flags = 0;
-  if (flags & O_RDONLY)
-    mfat_flags |= MFAT_O_RDONLY;
-  if (flags & O_WRONLY)
-    mfat_flags |= MFAT_O_WRONLY;
+  int mfat_flags;
+
+  // Read/write.
+  const int acc_mode = flags & O_ACCMODE;
+  switch (acc_mode) {
+    case O_RDONLY:
+      mfat_flags = MFAT_O_RDONLY;
+      break;
+    case O_WRONLY:
+      mfat_flags = MFAT_O_WRONLY;
+      break;
+    case O_RDWR:
+      mfat_flags = MFAT_O_RDWR;
+      break;
+    default:
+      mfat_flags = 0;
+  }
+
+  // Other flags, or:ed together.
   if (flags & O_CREAT)
     mfat_flags |= MFAT_O_CREAT;
+
   return mfat_flags;
 }
 
@@ -183,15 +198,34 @@ static int _is_posix_stdin_fd(int fd) {
 }
 
 static int _is_posix_file_fd(int fd) {
-  return fd >= 3;
+  return fd >= 10;
 }
 
 static int _posix_fd_to_mfat(int fd) {
-  return fd - 3;
+  return fd - 10;
 }
 
 static int _mfat_fd_to_posix(int fd) {
-  return fd + 3;
+  return fd + 10;
+}
+
+static void _mfat_stat_to_posix(struct stat* buf, const mfat_stat_t* s) {
+  memset(buf, 0, sizeof(struct stat));
+  buf->st_mode = _mfat_mode_to_posix(s->st_mode);
+  buf->st_size = s->st_size;
+  // TODO(m): st_mtim
+}
+
+static int _posix_whence_to_mfat(int whence) {
+  switch (whence) {
+    default:
+    case SEEK_SET:
+      return MFAT_SEEK_SET;
+    case SEEK_END:
+      return MFAT_SEEK_END;
+    case SEEK_CUR:
+      return MFAT_SEEK_CUR;
+  }
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -212,9 +246,13 @@ static int _mc1_fstat(int fd, struct stat* buf) {
     buf->st_mode = S_IFCHR;
     buf->st_blksize = 0;
     return 0;
+  } else if (s_has_fat && _is_posix_file_fd(fd)) {
+    mfat_stat_t s;
+    if (mfat_fstat(_posix_fd_to_mfat(fd), &s) == 0) {
+      _mfat_stat_to_posix(buf, &s);
+      return 0;
+    }
   }
-
-  // TODO(m): Implement me!
   errno = EBADF;
   return -1;
 }
@@ -236,10 +274,13 @@ static unsigned long long _mc1_gettimemicros(void) {
 }
 
 static _off_t _mc1_lseek(int fd, _off_t offset, int whence) {
-  // TODO(m): Implement me!
-  (void)fd;
-  (void)offset;
-  (void)whence;
+  if (s_has_fat && _is_posix_file_fd(fd)) {
+    int64_t result =
+        mfat_lseek(_posix_fd_to_mfat(fd), (int64_t)offset, _posix_whence_to_mfat(whence));
+    if (result >= 0) {
+      return (_off_t)result;
+    }
+  }
   errno = EBADF;
   return (off_t)-1;
 }
@@ -290,12 +331,9 @@ static int _mc1_rmdir(const char* path) {
 
 static int _mc1_stat(const char* path, struct stat* buf) {
   if (s_has_fat) {
-    mfat_stat_t stat;
-    if (mfat_stat(path, &stat) == 0) {
-      memset(buf, 0, sizeof(struct stat));
-      buf->st_mode = _mfat_mode_to_posix(stat.st_mode);
-      buf->st_size = stat.st_size;
-      // TODO(m): st_mtim
+    mfat_stat_t s;
+    if (mfat_stat(path, &s) == 0) {
+      _mfat_stat_to_posix(buf, &s);
       return 0;
     }
   }
@@ -368,7 +406,7 @@ void mc1newlib_init(unsigned flags) {
       if (mfat_mount(&read_block, &write_block, &s_sdctx) == 0) {
         s_has_fat = true;
       } else if (s_has_vcon) {
-          vcon_print("*** Unable to mount FAT partition.\n");
+        vcon_print("*** Unable to mount FAT partition.\n");
       }
     } else if (s_has_vcon) {
       vcon_print("*** Unable to init SD card.\n");
