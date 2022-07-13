@@ -2,6 +2,38 @@
 
 This is a software development kit (SDK) for the [MC1 computer](https://github.com/mrisc32/mc1).
 
+## Usage
+
+### Build & install the SDK
+
+Prerequisites:
+
+* Install CMake, Make and a compiler for your host system. For Ubuntu: `sudo apt install build-essential cmake`
+* Install the [MRISC32 GNU toolchain](https://github.com/mrisc32/mrisc32-gnu-toolchain).
+
+Installation:
+
+```bash
+make
+make DESTDIR=/foo/bar install
+```
+
+### Building programs for MC1
+
+```bash
+mrisc32-elf-gcc -O2 -o program program.c      \
+    -I/path/to/mc1-sdk/include                \
+    -L/path/to/mc1-sdk/lib                    \
+    -mno-crt0 -lmc1crt0 -lmc1 -T app-xram.ld
+```
+
+There are different ways that a program can be linked:
+
+| Linker script (-T) | Description |
+| --- | --- |
+| app-xram.ld | Application that is loaded into XRAM |
+| app-vram.ld | Application that is loaded into VRAM |
+
 ## Documentation
 
 * [Memory map](docs/memory_map.md)

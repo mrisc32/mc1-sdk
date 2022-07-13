@@ -21,7 +21,7 @@
 OUT = out
 
 # Default optimization flags (may be overridden by parent Makefiles).
-CFLAGS_OPT = -O3
+CFLAGS_OPT = -Os
 
 # TODO(m): Remove -Wno-array-bounds once the GCC 12 bug has been fixed upstream. This is a
 # temporary workaround to make the MMIO() macro work (i.e. access a constant address).

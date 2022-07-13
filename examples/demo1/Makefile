@@ -39,7 +39,7 @@ all: $(OUT)/demo1.elf
 
 clean:
 	rm -f $(OUT)/*
-	make -C $(LIBMC1_DIR) clean
+	$(MAKE) -C $(LIBMC1_DIR) clean
 
 $(PNG2MCI):
 	@echo "=============================================================================="
@@ -48,7 +48,7 @@ $(PNG2MCI):
 	@false
 
 $(LIBMC1):
-	make -C $(LIBMC1_DIR)
+	$(MAKE) -C $(LIBMC1_DIR)
 
 $(OUT)/crt0.o: $(SDK_ROOT)/linker-scripts/crt0.s
 	$(AS) $(ASFLAGS) -o $@ $<

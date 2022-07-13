@@ -36,10 +36,10 @@ all: $(OUT)/dhry.elf
 
 clean:
 	rm -f $(OUT)/*
-	make -C $(LIBMC1_DIR) clean
+	$(MAKE) -C $(LIBMC1_DIR) clean
 
 $(LIBMC1):
-	make -C $(LIBMC1_DIR)
+	$(MAKE) -C $(LIBMC1_DIR)
 
 $(OUT)/crt0.o: $(SDK_ROOT)/linker-scripts/crt0.s
 	$(AS) $(ASFLAGS) -o $@ $<

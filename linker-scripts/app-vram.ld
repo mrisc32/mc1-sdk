@@ -129,7 +129,8 @@ SECTIONS
     }
 
     . = ALIGN(4);
-    __bss_size = . - __bss_start;
+    __bss_end = .;
+    __bss_size = __bss_end - __bss_start;
 
 
     /* This tells the system where it can start to allocate VRAM. */
