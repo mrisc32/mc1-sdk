@@ -28,11 +28,8 @@
 .include "mc1/memory.inc"
 .include "mc1/mmio.inc"
 
-.ifdef STACK_IN_XRAM
-    STACK_SIZE = 512*1024
-.else
-    STACK_SIZE = 4*1024
-.endif
+    VRAM_STACK_SIZE = 4*1024
+    XRAM_STACK_SIZE = 512*1024
 
     .section .text.start, "ax"
 
@@ -41,18 +38,20 @@
 
 _start:
     ; ------------------------------------------------------------------------
-    ; Set up the stack. By default the stack is placed at the top of VRAM.
-    ; Define STACK_IN_XRAM to use XRAM for the stack.
+    ; Set up the stack. We use XRAM if we have it, otherwise VRAM. We place
+    ; the stack at the top to minimize the risk of collisions with heap
+    ; allocations.
     ; ------------------------------------------------------------------------
 
     ldi     r20, #MMIO_START
-.ifdef STACK_IN_XRAM
     ldw     r1, [r20, #XRAMSIZE]
+    bz      r1, 1f
     ldi     sp, #XRAM_START
-.else
+    b       2f
+1:
     ldw     r1, [r20, #VRAMSIZE]
     ldi     sp, #VRAM_START
-.endif
+2:
     add     sp, sp, r1              ; sp = Top of stack
 
 
@@ -81,32 +80,20 @@ _start:
 
     call    #mem_init@pc
 
-    ; Add a memory pool for the XRAM (if any).
-    ldi     r1, #__xram_free_start
-
-    ldw     r2, [r20, #XRAMSIZE]
-    bz      r2, 1f
-    ldi     r3, #XRAM_START
-    sub     r3, r1, r3
-    sub     r2, r2, r3
-.ifdef STACK_IN_XRAM
-    add     r2, r2, #-STACK_SIZE
-.endif
-
-    ldi     r3, #MEM_TYPE_EXT
-    call    #mem_add_pool@pc
-1:
-
     ; Add a memory pool for the VRAM.
     ldi     r1, #__vram_free_start
 
+    ; Calculate the size of the memory pool.
     ldw     r2, [r20, #VRAMSIZE]
     ldi     r3, #VRAM_START
     sub     r3, r1, r3
     sub     r2, r2, r3
-.ifndef STACK_IN_XRAM
-    add     r2, r2, #-STACK_SIZE
-.endif
+
+    ; If we have no XRAM, the stack is at the top of the VRAM. Leve some room.
+    ldw     r3, [r20, #XRAMSIZE]
+    bnz     r3, 1f
+    add     r2, r2, #-VRAM_STACK_SIZE
+1:
 
     ldi     r3, #MEM_TYPE_VIDEO
     call    #mem_add_pool@pc
@@ -168,20 +155,22 @@ _getheapend:
     ; Heap is in VRAM.
     ldw     r1, [r2, #VRAMSIZE]
     add     r1, r1, #VRAM_START
-.ifndef STACK_IN_XRAM
-    ldi     r2, #STACK_SIZE
-    sub     r1, r1, r2
-.endif
+
+    ; If we have no XRAM, the stack is at the top of the VRAM. Leve some room.
+    ldw     r3, [r2, #XRAMSIZE]
+    bnz     r3, 2f
+    add     r1, r1, #-VRAM_STACK_SIZE
+2:
     ret
 
 1:
     ; Heap is in XRAM.
     ldw     r1, [r2, #XRAMSIZE]
     add     r1, r1, #XRAM_START
-.ifdef STACK_IN_XRAM
-    ldi     r2, #STACK_SIZE
+
+    ; Leave room for the stack (which must be in XRAM).
+    ldi     r2, #XRAM_STACK_SIZE
     sub     r1, r1, r2
-.endif
     ret
 
     .size   _getheapend,.-_getheapend
