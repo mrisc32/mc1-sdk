@@ -61,6 +61,7 @@ LIBMC1_OBJS = \
     $(OUT)/crc7.o \
     $(OUT)/crc16.o \
     $(OUT)/crc32c.o \
+    $(OUT)/elf32.o \
     $(OUT)/fast_math.o \
     $(OUT)/framebuffer.o \
     $(OUT)/gfx.o \
