@@ -33,9 +33,11 @@ LDFLAGS_APP  = -T $(SDK_ROOT)/linker-scripts/app-vram.ld -mno-crt0 -L $(LIBMC1_D
 PNG2MCI      = $(SDK_ROOT)/tools/png2mci
 RAW2C        = $(SDK_ROOT)/tools/raw2c.py
 
-.PHONY: all clean
+.PHONY: all clean FORCE
 
 all: $(OUT)/demo1.elf
+
+FORCE:
 
 clean:
 	rm -f $(OUT)/*
@@ -47,7 +49,7 @@ $(PNG2MCI):
 	@echo "=============================================================================="
 	@false
 
-$(LIBMC1):
+$(LIBMC1): FORCE
 	$(MAKE) -C $(LIBMC1_DIR)
 
 $(OUT)/crt0.o: $(SDK_ROOT)/linker-scripts/crt0.s

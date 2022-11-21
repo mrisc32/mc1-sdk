@@ -77,6 +77,8 @@ _start:
     ; Set up the stack. We use XRAM if we have it, otherwise VRAM. We place
     ; the stack at the top to minimize the risk of collisions with heap
     ; allocations.
+    ; TODO(m): Use BSS instead to avoid heap allocation collisions and
+    ; simplify logic?
     ; ------------------------------------------------------------------------
 
     ldi     r16, #MMIO_START
@@ -108,31 +110,6 @@ _start:
     ldea    r1, [r1, vl*4]
     bnz     r2, 1b
 2:
-
-
-    ; ------------------------------------------------------------------------
-    ; Initialize the memory allocator.
-    ; ------------------------------------------------------------------------
-
-    call    #mem_init@pc
-
-    ; Add a memory pool for the VRAM.
-    ldi     r1, #__vram_free_start
-
-    ; Calculate the size of the memory pool.
-    ldw     r2, [r16, #VRAMSIZE]
-    ldi     r3, #VRAM_START
-    sub     r3, r1, r3
-    sub     r2, r2, r3
-
-    ; If we have no XRAM, the stack is at the top of the VRAM. Leve some room.
-    ldw     r3, [r16, #XRAMSIZE]
-    bnz     r3, 1f
-    add     r2, r2, #-.L_VRAM_STACK_SIZE
-1:
-
-    ldi     r3, #MEM_TYPE_VIDEO
-    call    #mem_add_pool@pc
 
 
     ; ------------------------------------------------------------------------
