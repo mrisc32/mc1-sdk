@@ -30,9 +30,8 @@ OUTPUT_FORMAT("elf32-mrisc32")
 OUTPUT_ARCH("mrisc32")
 ENTRY(_start)
 
-__vram_start = 0x40001000;   /* Start of VRAM (w room for ROM BSS) */
-__xram_start = 0x80000000;   /* Start of XRAM. */
-__app_start  = __vram_start; /* Start address for the application. */
+__app_start = 0x40008000;   /* App start address (w room for boot programs). */
+__xram_start = 0x80000000;  /* Start of XRAM. */
 
 SECTIONS
 {

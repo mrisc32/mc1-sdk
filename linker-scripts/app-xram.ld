@@ -30,7 +30,7 @@ OUTPUT_FORMAT("elf32-mrisc32")
 OUTPUT_ARCH("mrisc32")
 ENTRY(_start)
 
-__vram_start = 0x40000100;   /* Start of VRAM (w room for video "registers") */
+__vram_start = 0x40008000;   /* Start of VRAM (w room for boot program) */
 __xram_start = 0x80000000;   /* Start of XRAM. */
 __app_start  = __xram_start; /* Start address for the application. */
 
