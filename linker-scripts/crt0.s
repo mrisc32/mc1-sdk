@@ -28,8 +28,29 @@
 .include "mc1/memory.inc"
 .include "mc1/mmio.inc"
 
-    VRAM_STACK_SIZE = 4*1024
-    XRAM_STACK_SIZE = 512*1024
+    ; Stack configuration.
+    .L_VRAM_STACK_SIZE = 4*1024
+    .L_XRAM_STACK_SIZE = 512*1024
+
+
+; ----------------------------------------------------------------------------
+; Transitional stack (placed in BSS).
+; ----------------------------------------------------------------------------
+
+    .L_STACK_R1 = 0
+    .L_STACK_R2 = 4
+    .L_STACK_R16 = 8
+    .L_STACK_SP = 12
+    .L_STACK_LR = 16
+    .L_STACK_VL = 20
+    .L_STACK_SIZE = 24
+
+    .lcomm  .L_transitional_stack, .L_STACK_SIZE
+
+
+; ----------------------------------------------------------------------------
+; Program entry.
+; ----------------------------------------------------------------------------
 
     .section .text.start, "ax"
 
@@ -38,18 +59,33 @@
 
 _start:
     ; ------------------------------------------------------------------------
+    ; Preserve clobbered calle-save registers and argc (R1) + argv (R2). We
+    ; can't use the stack (we don't have one yet) so store the registers in
+    ; our BSS area.
+    ; ------------------------------------------------------------------------
+
+    ldi     r3, #.L_transitional_stack@pc
+    stw     r1, [r3, #.L_STACK_R1]
+    stw     r2, [r3, #.L_STACK_R2]
+    stw     r16, [r3, #.L_STACK_R16]
+    stw     sp, [r3, #.L_STACK_SP]
+    stw     lr, [r3, #.L_STACK_LR]
+    stw     vl, [r3, #.L_STACK_VL]
+
+
+    ; ------------------------------------------------------------------------
     ; Set up the stack. We use XRAM if we have it, otherwise VRAM. We place
     ; the stack at the top to minimize the risk of collisions with heap
     ; allocations.
     ; ------------------------------------------------------------------------
 
-    ldi     r20, #MMIO_START
-    ldw     r1, [r20, #XRAMSIZE]
+    ldi     r16, #MMIO_START
+    ldw     r1, [r16, #XRAMSIZE]
     bz      r1, 1f
     ldi     sp, #XRAM_START
     b       2f
 1:
-    ldw     r1, [r20, #VRAMSIZE]
+    ldw     r1, [r16, #VRAMSIZE]
     ldi     sp, #VRAM_START
 2:
     add     sp, sp, r1              ; sp = Top of stack
@@ -84,15 +120,15 @@ _start:
     ldi     r1, #__vram_free_start
 
     ; Calculate the size of the memory pool.
-    ldw     r2, [r20, #VRAMSIZE]
+    ldw     r2, [r16, #VRAMSIZE]
     ldi     r3, #VRAM_START
     sub     r3, r1, r3
     sub     r2, r2, r3
 
     ; If we have no XRAM, the stack is at the top of the VRAM. Leve some room.
-    ldw     r3, [r20, #XRAMSIZE]
+    ldw     r3, [r16, #XRAMSIZE]
     bnz     r3, 1f
-    add     r2, r2, #-VRAM_STACK_SIZE
+    add     r2, r2, #-.L_VRAM_STACK_SIZE
 1:
 
     ldi     r3, #MEM_TYPE_VIDEO
@@ -115,23 +151,34 @@ _start:
     ; Call main().
     ; ------------------------------------------------------------------------
 
-    ; r1 = argc, r2 = argv (these are invalid - don't use them!)
-    ldi     r1, #0
-    ldi     r2, #0
+    ; r1 = argc, r2 = argv
+    ldi     r3, #.L_transitional_stack@pc
+    ldw     r1, [r3, #.L_STACK_R1]
+    ldw     r2, [r3, #.L_STACK_R2]
 
-    ; Jump to main().
+    ; Call main().
     call    #main@pc
+    mov     r16, r1     ; Preserve return value.
 
     ; Call exit().
     call    #exit@pc
 
 
     ; ------------------------------------------------------------------------
-    ; Terminate the program: Perform a soft reset.
+    ; Return to the caller (if we got this far).
     ; ------------------------------------------------------------------------
 
-    j       z, #0x0200
+    ; Return value from main() goes in R1.
+    mov     r1, r16
 
+    ; Restore callee-saved registers.
+    ldi     r3, #.L_transitional_stack@pc
+    ldw     r16, [r3, #.L_STACK_R16]
+    ldw     sp, [r3, #.L_STACK_SP]
+    ldw     lr, [r3, #.L_STACK_LR]
+    ldw     vl, [r3, #.L_STACK_VL]
+
+    ret
 
 
 ; ----------------------------------------------------------------------------
@@ -159,7 +206,7 @@ _getheapend:
     ; If we have no XRAM, the stack is at the top of the VRAM. Leve some room.
     ldw     r3, [r2, #XRAMSIZE]
     bnz     r3, 2f
-    add     r1, r1, #-VRAM_STACK_SIZE
+    add     r1, r1, #-.L_VRAM_STACK_SIZE
 2:
     ret
 
@@ -169,7 +216,7 @@ _getheapend:
     add     r1, r1, #XRAM_START
 
     ; Leave room for the stack (which must be in XRAM).
-    ldi     r2, #XRAM_STACK_SIZE
+    ldi     r2, #.L_XRAM_STACK_SIZE
     sub     r1, r1, r2
     ret
 
