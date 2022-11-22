@@ -34,6 +34,9 @@ __vram_start = 0x40008000;   /* Start of VRAM (w room for boot program) */
 __xram_start = 0x80000000;   /* Start of XRAM. */
 __app_start  = __xram_start; /* Start address for the application. */
 
+/* Override the stack size by passing --defsym=__stack_size=N to ld. */
+__stack_size = DEFINED(__stack_size) ? __stack_size : 524288;
+
 SECTIONS
 {
     /* --------------------------------------------------------------------- */
@@ -129,9 +132,22 @@ SECTIONS
     }
 
     . = ALIGN(4);
-    __bss_end = .;
-    __bss_size = __bss_end - __bss_start;
+    __bss_size = . - __bss_start;
 
+
+    /* --------------------------------------------------------------------- */
+    /* Stack.                                                                */
+    /* --------------------------------------------------------------------- */
+
+    /* Allocate space for the stack. */
+    . = ALIGN(32);
+    __stack_end = . + __stack_size;
+    . = __stack_end;
+
+
+    /* --------------------------------------------------------------------- */
+    /* Pointers to the start of free RAM (for dynamic allocation).           */
+    /* --------------------------------------------------------------------- */
 
     /* This tells the system where it can start to allocate XRAM. */
     . = ALIGN(32);

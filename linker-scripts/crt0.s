@@ -28,10 +28,6 @@
 .include "mc1/memory.inc"
 .include "mc1/mmio.inc"
 
-    ; Stack configuration.
-    .L_VRAM_STACK_SIZE = 4*1024
-    .L_XRAM_STACK_SIZE = 512*1024
-
 
 ; ----------------------------------------------------------------------------
 ; Transitional stack (placed in BSS).
@@ -74,23 +70,11 @@ _start:
 
 
     ; ------------------------------------------------------------------------
-    ; Set up the stack. We use XRAM if we have it, otherwise VRAM. We place
-    ; the stack at the top to minimize the risk of collisions with heap
-    ; allocations.
-    ; TODO(m): Use BSS instead to avoid heap allocation collisions and
-    ; simplify logic?
+    ; Set up the stack. The stack location and size is defined by the linker
+    ; script.
     ; ------------------------------------------------------------------------
 
-    ldi     r16, #MMIO_START
-    ldw     r1, [r16, #XRAMSIZE]
-    bz      r1, 1f
-    ldi     sp, #XRAM_START
-    b       2f
-1:
-    ldw     r1, [r16, #VRAMSIZE]
-    ldi     sp, #VRAM_START
-2:
-    add     sp, sp, r1              ; sp = Top of stack
+    ldi     sp, #__stack_end
 
 
     ; ------------------------------------------------------------------------
@@ -179,22 +163,12 @@ _getheapend:
     ; Heap is in VRAM.
     ldw     r1, [r2, #VRAMSIZE]
     add     r1, r1, #VRAM_START
-
-    ; If we have no XRAM, the stack is at the top of the VRAM. Leve some room.
-    ldw     r3, [r2, #XRAMSIZE]
-    bnz     r3, 2f
-    add     r1, r1, #-.L_VRAM_STACK_SIZE
-2:
     ret
 
 1:
     ; Heap is in XRAM.
     ldw     r1, [r2, #XRAMSIZE]
     add     r1, r1, #XRAM_START
-
-    ; Leave room for the stack (which must be in XRAM).
-    ldi     r2, #.L_XRAM_STACK_SIZE
-    sub     r1, r1, r2
     ret
 
     .size   _getheapend,.-_getheapend
