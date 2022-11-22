@@ -35,16 +35,17 @@ MRISC32_AR       = mrisc32-elf-ar rcs
 SDK_ROOT         = .
 LIBMC1_DIR       = $(SDK_ROOT)/libmc1
 LIBMC1           = $(LIBMC1_DIR)/out/libmc1.a
-CRT0_DIR         = $(SDK_ROOT)/linker-scripts
-LIBMC1CRT0       = $(CRT0_DIR)/build/libmc1crt0.a
+CRT0_DIR         = $(SDK_ROOT)/crt0
 TOOLS_DIR        = $(SDK_ROOT)/tools
 PNG2MCI          = $(TOOLS_DIR)/png2mci
 LINKERSCRIPT_DIR = $(SDK_ROOT)/linker-scripts
 
 
-.PHONY: all install clean
+.PHONY: all install clean libmc1 crt0 FORCE
 
-all: $(LIBMC1) $(LIBMC1CRT0) $(PNG2MCI)
+all: libmc1 crt0 $(PNG2MCI)
+
+FORCE:
 
 install: all
 	@echo Installing to $(DESTDIR)...
@@ -55,7 +56,7 @@ install: all
 
 	$(MKDIR) $(DESTDIR)/lib
 	$(CP) $(LIBMC1) $(DESTDIR)/lib/
-	$(CP) $(LIBMC1CRT0) $(DESTDIR)/lib/
+	$(CP) $(CRT0_DIR)/out/*.a $(DESTDIR)/lib/
 	$(CP) $(LINKERSCRIPT_DIR)/*.ld  $(DESTDIR)/lib/
 
 	$(MKDIR) $(DESTDIR)/include/mc1
@@ -63,21 +64,19 @@ install: all
 
 clean:
 	$(MAKE) -C $(LIBMC1_DIR) clean
-	$(RMDIR) $(CRT0_DIR)/build
-	$(RMDIR) $(TOOLS_DIR)/build
+	$(MAKE) -C $(CRT0_DIR) clean
+	$(RMDIR) $(TOOLS_DIR)/out
 	$(RM) $(PNG2MCI)
 
-$(LIBMC1CRT0): $(CRT0_DIR)/crt0.s
-	$(MKDIR) $(CRT0_DIR)/build
-	$(MRISC32_GCC) -c -I $(LIBMC1_DIR)/include -o $(CRT0_DIR)/build/crt0.o $(CRT0_DIR)/crt0.s
-	$(MRISC32_AR) $(LIBMC1CRT0) $(CRT0_DIR)/build/crt0.o
+crt0:
+	$(MAKE) -C $(CRT0_DIR)
 
-$(LIBMC1):
+libmc1:
 	$(MAKE) -C $(LIBMC1_DIR)
 
-$(PNG2MCI):
-	$(MKDIR) $(TOOLS_DIR)/build
-	$(CMAKE) $(CMAKE_GENERATOR) -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(TOOLS_DIR) -S $(TOOLS_DIR)/src -B $(TOOLS_DIR)/build
-	$(CMAKE) --build $(TOOLS_DIR)/build
-	DESTDIR= $(CMAKE) --install $(TOOLS_DIR)/build
+$(PNG2MCI): FORCE
+	$(MKDIR) $(TOOLS_DIR)/out
+	$(CMAKE) $(CMAKE_GENERATOR) -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(TOOLS_DIR) -S $(TOOLS_DIR)/src -B $(TOOLS_DIR)/out
+	$(CMAKE) --build $(TOOLS_DIR)/out
+	DESTDIR= $(CMAKE) --install $(TOOLS_DIR)/out
 

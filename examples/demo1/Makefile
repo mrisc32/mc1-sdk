@@ -52,7 +52,7 @@ $(PNG2MCI):
 $(LIBMC1): FORCE
 	$(MAKE) -C $(LIBMC1_DIR)
 
-$(OUT)/crt0.o: $(SDK_ROOT)/linker-scripts/crt0.s
+$(OUT)/crt0.o: $(SDK_ROOT)/crt0/crt0-app.s
 	$(AS) $(ASFLAGS) -o $@ $<
 
 $(OUT)/demo1.o: demo1.c

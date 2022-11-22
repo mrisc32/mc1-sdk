@@ -18,40 +18,27 @@
 #  3. This notice may not be removed or altered from any source distribution.
 #--------------------------------------------------------------------------------------------------
 
-SDK_ROOT     = ../..
-LIBMC1_DIR   = $(SDK_ROOT)/libmc1
-LIBMC1       = $(LIBMC1_DIR)/out/libmc1.a
-OUT          = ./out
+# Host command configuration.
+RM          = rm -f
+MRISC32_GCC = mrisc32-elf-gcc
+MRISC32_AR  = mrisc32-elf-ar rcs
 
-CC           = mrisc32-elf-gcc
-CFLAGS       = -O3 -c -I $(SDK_ROOT)/libmc1/include -w -DMC1
-AS           = mrisc32-elf-as
-ASFLAGS      = -I $(SDK_ROOT)/libmc1/include
-LD           = mrisc32-elf-gcc
-LDFLAGS_APP  = -T $(SDK_ROOT)/linker-scripts/app-vram.ld -mno-crt0 -L $(LIBMC1_DIR)/out
+# Paths.
+SDK_ROOT   = ..
+LIBMC1_DIR = $(SDK_ROOT)/libmc1
+OUT        = out
 
-.PHONY: all clean FORCE
+.PHONY: all clean
 
-all: $(OUT)/dhry.elf
+all: $(OUT)/libmc1crt0-app.a $(OUT)/libmc1crt0-boot.a
 
 clean:
-	rm -f $(OUT)/*
-	$(MAKE) -C $(LIBMC1_DIR) clean
+	rm -rf $(OUT)/*.o $(OUT)/*.a
 
-FORCE:
+$(OUT)/libmc1crt0-app.a: crt0-app.s
+	$(MRISC32_GCC) -c -I $(LIBMC1_DIR)/include -o $(OUT)/crt0-app.o $<
+	$(MRISC32_AR) $@ $(OUT)/crt0-app.o
 
-$(LIBMC1): FORCE
-	$(MAKE) -C $(LIBMC1_DIR)
-
-$(OUT)/crt0.o: $(SDK_ROOT)/crt0/crt0-app.s
-	$(AS) $(ASFLAGS) -o $@ $<
-
-$(OUT)/dhry_1.o: dhry_1.c
-	$(CC) $(CFLAGS) -o $@ $<
-
-$(OUT)/dhry_2.o: dhry_2.c
-	$(CC) $(CFLAGS) -o $@ $<
-
-$(OUT)/dhry.elf: $(OUT)/crt0.o $(OUT)/dhry_1.o $(OUT)/dhry_2.o $(LIBMC1)
-	$(LD) $(LDFLAGS_APP) -o $@ $(OUT)/crt0.o $(OUT)/dhry_1.o $(OUT)/dhry_2.o -lmc1
-
+$(OUT)/libmc1crt0-boot.a: crt0-boot.s
+	$(MRISC32_GCC) -c -I $(LIBMC1_DIR)/include -o $(OUT)/crt0-boot.o $<
+	$(MRISC32_AR) $@ $(OUT)/crt0-boot.o

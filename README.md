@@ -21,18 +21,19 @@ make DESTDIR=/foo/bar install
 ### Building programs for MC1
 
 ```bash
-mrisc32-elf-gcc -O2 -o program program.c      \
-    -I/path/to/mc1-sdk/include                \
-    -L/path/to/mc1-sdk/lib                    \
-    -mno-crt0 -lmc1crt0 -lmc1 -T app-xram.ld
+mrisc32-elf-gcc -O2 -o program program.c         \
+    -I/path/to/mc1-sdk/include                   \
+    -L/path/to/mc1-sdk/lib                       \
+    -mno-crt0 -lmc1crt0-app -lmc1 -T app-xram.ld
 ```
 
 There are different ways that a program can be linked:
 
-| Linker script (-T) | Description |
-| --- | --- |
-| app-xram.ld | Application that is loaded into XRAM |
-| app-vram.ld | Application that is loaded into VRAM |
+| CRT0 | Linker script | Description |
+| --- | --- | --- |
+| `-lmc1crt0-app` | `-T app-xram.ld` | Application that is loaded into XRAM |
+| `-lmc1crt0-app` | `-T app-vram.ld` | Application that is loaded into VRAM |
+| `-lmc1crt0-boot` | `-T boot-vram.ld` | Boot program that is loaded into VRAM |
 
 ## Documentation
 

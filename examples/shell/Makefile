@@ -43,7 +43,7 @@ FORCE:
 $(LIBMC1): FORCE
 	$(MAKE) -C $(LIBMC1_DIR)
 
-$(OUT)/crt0.o: crt0.s
+$(OUT)/crt0.o: $(SDK_ROOT)/crt0/crt0-boot.s
 	$(AS) $(ASFLAGS) -o $@ $<
 
 $(OUT)/shell.o: shell.cpp
