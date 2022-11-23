@@ -19,6 +19,7 @@
 //--------------------------------------------------------------------------------------------------
 
 #include <mc1/framebuffer.h>
+#include <mc1/keyboard.h>
 #include <mc1/leds.h>
 #include <mc1/mci_decode.h>
 #include <mc1/memory.h>
@@ -77,7 +78,7 @@ static const struct {
 static const char SCROLL_TEXT[] =
     "                        "
     "HELLO!  THIS IS A DEMONSTRATION OF THE MC1 SDK.  "
-    "THE AWSOME ART WAS CREATD BY FERNANDO CORREA (BE SURE TO CHECK OUT HIS OTHER WORKS), "
+    "THE AWSOME ART WAS CREATED BY FERNANDO CORREA (BE SURE TO CHECK OUT HIS OTHER WORKS), "
     "AND THE FONT IS A CLASSIC AMIGA DEMO FONT FROM 1988 BY \"MING\" (A.K.A THE KNIGHT HAWKS "
     "FONT).      "
     "FIND OUT MORE ON:   === HTTPS://GITHUB.COM/MRISC32/MC1-SDK ==="
@@ -178,6 +179,8 @@ static void print_char(uint32_t* buf, int c) {
 }
 
 int main(void) {
+  kb_init();
+
   // Decode the picture into a framebuffer for VCP layer 1.
   const mci_header_t* pic_hdr = mci_get_header(pic_retrawave_car);
   if (!pic_hdr) {
@@ -255,6 +258,12 @@ int main(void) {
     while (MMIO(VIDFRAMENO) == old_vidframeno)
       ;
     old_vidframeno = MMIO(VIDFRAMENO);
+
+    // Check if the user pressed ESC.
+    kb_poll();
+    if (kb_is_pressed(KB_ESC)) {
+      break;
+    }
 
     // Select which picture we're displaying.
     int pic_no = (frame_no >> 10) % (sizeof(PICS) / sizeof(PICS[0]));

@@ -18,6 +18,7 @@
 //  3. This notice may not be removed or altered from any source distribution.
 //--------------------------------------------------------------------------------------------------
 
+#include <mc1/keyboard.h>
 #include <mc1/mci_decode.h>
 #include <mc1/mmio.h>
 #include <mc1/vcp.h>
@@ -31,6 +32,8 @@ extern const unsigned char mc1_logo_mci[];
 extern char __vram_free_start;
 
 int main(void) {
+  kb_init();
+
   // Decode the picture.
   const mci_header_t* mci_hdr = mci_get_header(mc1_logo_mci);
 
@@ -75,13 +78,16 @@ int main(void) {
 
   vcp_set_prg(LAYER_1, vcp_start);
 
-  while (1) {
+  while (!kb_is_pressed(KB_ESC)) {
     // Wait for vblank.
     uint32_t old_frame_no = MMIO(VIDFRAMENO);
     uint32_t frame_no;
     do {
       frame_no = MMIO(VIDFRAMENO);
     } while (frame_no == old_frame_no);
+
+    // Update keyboard state.
+    kb_poll();
 
     // TODO(m): Do something more interesting here...
     *palette_color0 = 0xffe0ffe0;
