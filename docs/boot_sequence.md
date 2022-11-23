@@ -2,7 +2,7 @@
 
 The MC1 first boots from ROM, which does minimal system initialization and tries to load and run an MRISC32 ELF32 executable from a FAT volume on an SD card.
 
-## Initialization.
+## Initialization
 
 The ROM initialization code sets up a small (512 bytes) stack at the top of VRAM. This stack is used by all ROM routines, but once control is handed over to the boot code the stack is expected to be redefined.
 
@@ -17,17 +17,27 @@ The ROM code will:
 
 Note: If none of the FAT volumes have the `boot` flag set, the first found FAT volume will be used as the boot volume.
 
-## MC1BOOT.EXE
+## Boot program (MC1BOOT.EXE)
 
-The boot executable must be an MRISC32 ELF32 binary file.
+The boot program is typically a small shell or launcher program that resides in the lower part of VRAM (see the [memory map](memory_map.md)).
 
-### VRAM executable
+The boot program must be an MRISC32 ELF32 binary file.
 
-If the boot program is to be loaded into VRAM it needs to linked such that it does *not* overwrite the ROM BSS area (see the [memory map](memory_map.md)). This is achieved by using the `app-vram.ld` linker script.
+It needs to linked such that it does *not* overwrite the ROM BSS area. This is achieved by using the `boot-vram.ld` linker script.
+
+## Application programs
+
+Application programs can be loaded and executed from a boot program (e.g. a shell), and may also return control to the boot program (provided that they do not clobber the lower VRAM area).
+
+Application programs must be MRISC32 ELF32 binary files.
+
+### VRAM application program
+
+If the application program is to be loaded into VRAM it needs to linked such that it does *not* overwrite the lower VRAM area that is reserved for the boot program (see the [memory map](memory_map.md)). This is achieved by using the `app-vram.ld` linker script.
 
 Note that the size of the VRAM is limited, so only small programs can be loaded into VRAM.
 
-### XRAM executable
+### XRAM application program
 
 If the boot program is to be loaded into XRAM it needs to linked such that it loads into XRAM. This is achieved by using the `app-xram.ld` linker script.
 

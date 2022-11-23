@@ -30,7 +30,7 @@ ASFLAGS      = -I $(SDK_ROOT)/libmc1/include
 LD           = mrisc32-elf-gcc
 LDFLAGS_APP  = -T $(SDK_ROOT)/linker-scripts/app-vram.ld -mno-crt0 -L $(LIBMC1_DIR)/out
 
-.PHONY: all clean
+.PHONY: all clean FORCE
 
 all: $(OUT)/systest.elf
 
@@ -38,10 +38,12 @@ clean:
 	rm -f $(OUT)/*
 	$(MAKE) -C $(LIBMC1_DIR) clean
 
-$(LIBMC1):
+FORCE:
+
+$(LIBMC1): FORCE
 	$(MAKE) -C $(LIBMC1_DIR)
 
-$(OUT)/crt0.o: $(SDK_ROOT)/linker-scripts/crt0.s
+$(OUT)/crt0.o: $(SDK_ROOT)/crt0/crt0-app.s
 	$(AS) $(ASFLAGS) -o $@ $<
 
 $(OUT)/systest.o: systest.c

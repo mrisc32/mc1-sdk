@@ -24,6 +24,7 @@
 #include <mc1/mmio.h>
 #include <mc1/vcp.h>
 
+#include <string.h>
 
 //--------------------------------------------------------------------------------------------------
 // Private.
@@ -102,10 +103,11 @@ fb_t* fb_create(int width, int height, int mode) {
   const size_t vcp_size = calc_vcp_size(height, mode);
   const size_t pix_size = calc_pixels_size(width, height, mode);
   const size_t total_size = sizeof(fb_t) + vcp_size + pix_size;
-  fb_t* fb = (fb_t*)mem_alloc(total_size, MEM_TYPE_VIDEO | MEM_CLEAR);
+  fb_t* fb = (fb_t*)vmem_alloc(total_size);
   if (!fb) {
     return NULL;
   }
+  memset(fb, 0, total_size);
 
   // Populate the fb_t object fields.
   {
@@ -158,7 +160,7 @@ fb_t* fb_create(int width, int height, int mode) {
 }
 
 void fb_destroy(fb_t* fb) {
-  mem_free(fb);
+  vmem_free(fb);
 }
 
 void fb_show(fb_t* fb, layer_t layer) {

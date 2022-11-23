@@ -22,13 +22,11 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 
 #ifdef __MRISC32__
-#include <mc1/memory.h>
 #include <mr32intrin.h>
-#else
-#include <cstdlib>
 #endif
 
 namespace mc1 {
@@ -502,21 +500,13 @@ void glyph_renderer_t::init(const unsigned log2_width, const unsigned log2_heigh
   m_width = 1u << log2_width;
   m_height = 1u << log2_height;
   const size_t mem_required = m_width * (m_height + 2);
-#ifdef __MRISC32__
-  m_pixels = reinterpret_cast<uint8_t*>(mem_alloc(mem_required, MEM_TYPE_ANY | MEM_CLEAR));
-#else
   m_pixels = reinterpret_cast<uint8_t*>(malloc(mem_required));
-#endif
   m_work_rows = m_pixels + (m_width * m_height);
 }
 
 void glyph_renderer_t::deinit() {
   if (m_pixels != nullptr) {
-#ifdef __MRISC32__
-    mem_free(m_pixels);
-#else
     free(m_pixels);
-#endif
     m_pixels = nullptr;
   }
 }

@@ -115,14 +115,14 @@ static void* malloc_vram(size_t nbytes) {
   if (use_malloc_for_vram()) {
     return malloc(nbytes);
   }
-  return mem_alloc(nbytes, MEM_TYPE_VIDEO);
+  return vmem_alloc(nbytes);
 }
 
 static void free_vram(void* ptr) {
   if (use_malloc_for_vram()) {
     free(ptr);
   } else {
-    mem_free(ptr);
+    vmem_free(ptr);
   }
 }
 

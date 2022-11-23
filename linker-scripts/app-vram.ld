@@ -30,9 +30,13 @@ OUTPUT_FORMAT("elf32-mrisc32")
 OUTPUT_ARCH("mrisc32")
 ENTRY(_start)
 
-__vram_start = 0x40001000;   /* Start of VRAM (w room for ROM BSS) */
-__xram_start = 0x80000000;   /* Start of XRAM. */
-__app_start  = __vram_start; /* Start address for the application. */
+__app_start = 0x40008000;   /* App start address (w room for boot programs). */
+__xram_start = 0x80000000;  /* Start of XRAM. */
+
+/* The defalt stack size is fairly small for VRAM applications. */
+/* Override the stack size by passing --defsym=__stack_size=N to ld. */
+__stack_size = DEFINED(__stack_size) ? __stack_size : 4096;
+
 
 SECTIONS
 {
@@ -129,9 +133,22 @@ SECTIONS
     }
 
     . = ALIGN(4);
-    __bss_end = .;
-    __bss_size = __bss_end - __bss_start;
+    __bss_size = . - __bss_start;
 
+
+    /* --------------------------------------------------------------------- */
+    /* Stack.                                                                */
+    /* --------------------------------------------------------------------- */
+
+    /* Allocate space for the stack. */
+    . = ALIGN(32);
+    __stack_end = . + __stack_size;
+    . = __stack_end;
+
+
+    /* --------------------------------------------------------------------- */
+    /* Pointers to the start of free RAM (for dynamic allocation).           */
+    /* --------------------------------------------------------------------- */
 
     /* This tells the system where it can start to allocate VRAM. */
     . = ALIGN(32);

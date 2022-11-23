@@ -1,6 +1,6 @@
 /* -*- mode: ld-script; tab-width: 4; indent-tabs-mode: nil; -*-             */
 /* ------------------------------------------------------------------------- */
-/* Copyright (c) 2021 Marcus Geelnard                                        */
+/* Copyright (c) 2022 Marcus Geelnard                                        */
 /*                                                                           */
 /* This software is provided 'as-is', without any express or implied         */
 /* warranty. In no event will the authors be held liable for any damages     */
@@ -23,28 +23,57 @@
 /* ------------------------------------------------------------------------- */
 
 /* ------------------------------------------------------------------------- */
-/* Linker script for MC1 applications that load into XRAM                    */
+/* Linker script for MC1 secondary boot that loads into VRAM                 */
+/*                                                                           */
+/* The secondary boot program is loaded into a small portion of the lower    */
+/* part of VRAM. It re-uses the BSS area that was used by the ROM. The       */
+/* purpose of a secondary boot program is to act as a small shell or loader  */
+/* for other programs.                                                       */
 /* ------------------------------------------------------------------------- */
 
 OUTPUT_FORMAT("elf32-mrisc32")
 OUTPUT_ARCH("mrisc32")
 ENTRY(_start)
 
-__vram_start = 0x40008000;   /* Start of VRAM (w room for boot program) */
-__xram_start = 0x80000000;   /* Start of XRAM. */
-__app_start  = __xram_start; /* Start address for the application. */
-
-/* Override the stack size by passing --defsym=__stack_size=N to ld. */
-__stack_size = DEFINED(__stack_size) ? __stack_size : 524288;
+__rom_bss_start = 0x40000100;  /* Start of ROM BSS */
+__rom_bss_end   = 0x40001000;  /* End of ROM BSS */
 
 SECTIONS
 {
     /* --------------------------------------------------------------------- */
+    /* BSS comes first, in order to re-use the ROM BSS area.                 */
+    /* We define __bss_start and __bss_size so the startup code knows what   */
+    /* memory area to clear.                                                 */
+    /* --------------------------------------------------------------------- */
+
+    __bss_start = __rom_bss_start;
+    . = __bss_start;
+
+    .sbss (NOLOAD) :
+    {
+        *(.sbss*)
+        *(.scommon*)
+    }
+
+    . = ALIGN(32);
+    .bss (NOLOAD) :
+    {
+        *(.bss*)
+        *(COMMON)
+    }
+
+    . = ALIGN(4);
+    __bss_size = . - __bss_start;
+
+
+    /* --------------------------------------------------------------------- */
     /* Code.                                                                 */
     /* --------------------------------------------------------------------- */
 
-    . = __app_start;
+    /* Ensure that we don't clobber the ROM BSS */
+    . = MAX(., __rom_bss_end);
 
+    . = ALIGN(32);
     .text :
     {
         *(.text.start)  /* Ensure that the _start() function is placed first */
@@ -106,54 +135,11 @@ SECTIONS
         *(.sdata*)
     }
 
-    __app_size = . - __app_start;
-
 
     /* --------------------------------------------------------------------- */
-    /* BSS goes after the application code and data.                         */
-    /* We define __bss_start and __bss_size so the startup code knows what   */
-    /* memory area to clear.                                                 */
+    /* Start of free VRAM.                                                   */
     /* --------------------------------------------------------------------- */
 
     . = ALIGN(32);
-    __bss_start = .;
-
-    .sbss (NOLOAD) :
-    {
-        *(.sbss*)
-        *(.scommon*)
-    }
-
-    . = ALIGN(32);
-    .bss (NOLOAD) :
-    {
-        *(.bss*)
-        *(COMMON)
-    }
-
-    . = ALIGN(4);
-    __bss_size = . - __bss_start;
-
-
-    /* --------------------------------------------------------------------- */
-    /* Stack.                                                                */
-    /* --------------------------------------------------------------------- */
-
-    /* Allocate space for the stack. */
-    . = ALIGN(32);
-    __stack_end = . + __stack_size;
-    . = __stack_end;
-
-
-    /* --------------------------------------------------------------------- */
-    /* Pointers to the start of free RAM (for dynamic allocation).           */
-    /* --------------------------------------------------------------------- */
-
-    /* This tells the system where it can start to allocate XRAM. */
-    . = ALIGN(32);
-    __xram_free_start = .;
-    _end = .;
-
-    /* This tells the system where it can start to allocate VRAM. */
-    __vram_free_start = __vram_start;
+    __vram_free_start = .;
 }

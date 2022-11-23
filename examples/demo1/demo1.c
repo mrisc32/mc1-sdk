@@ -190,10 +190,11 @@ int main(void) {
   fb_show(fb, LAYER_1);
 
   // Allocate memory for the scroller buffer.
-  uint32_t* scroll_buf = mem_alloc(SCROLLER_H * SCROLLER_STRIDE, MEM_TYPE_VIDEO | MEM_CLEAR);
+  uint32_t* scroll_buf = vmem_alloc(SCROLLER_H * SCROLLER_STRIDE);
+  memset(scroll_buf, 0, SCROLLER_H * SCROLLER_STRIDE);
 
   // Set up the scroller VCP for layer 2.
-  uint32_t* scroll_vcp = mem_alloc(SCROLLER_VCP_SIZE, MEM_TYPE_VIDEO);
+  uint32_t* scroll_vcp = vmem_alloc(SCROLLER_VCP_SIZE);
   uint32_t* scroll_pal;
   uint32_t* scroll_xoffs;
   uint32_t* scroll_color_bar;
