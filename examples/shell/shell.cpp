@@ -58,6 +58,7 @@ public:
 
     // VCP prologue.
     uint32_t* vcp = m_vcp_start;
+    *vcp++ = vcp_emit_setreg(VCR_RMODE, 0U);  // Turn of dithering.
     *vcp++ = vcp_emit_setreg(VCR_XINCR, (0x010000U * GFX_WIDTH) / native_width);
     *vcp++ = vcp_emit_setreg(VCR_CMODE, CMODE_PAL1);
 
@@ -88,8 +89,12 @@ public:
   }
 
   void show_load_screen() {
-    // TODO(m): Show something more fancy?
-    vcp_set_prg(LAYER_1, nullptr);
+    // Set a constant backround color.
+    auto* vcp = reinterpret_cast<uint32_t*>(0x40000010U);  // Layer 1 VCP start.
+    *vcp++ = vcp_emit_setreg(VCR_RMODE, 0U);  // Turn of dithering.
+    *vcp++ = vcp_emit_setpal(0, 1);
+    *vcp++ = 0xff88aa55U;
+    *vcp++ = vcp_emit_waity(32767);
   }
 
   void wait_vbl() {
@@ -405,6 +410,10 @@ private:
 
       // Restore the console.
       m_display.show_console(VRAM_FREE_START);
+
+      // Get back to a known good state.
+      mount_filesystem(true);
+      kb_init();
     } else {
       // Restore the console and print an error message.
       m_display.show_console(VRAM_FREE_START);
