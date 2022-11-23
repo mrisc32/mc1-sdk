@@ -1,6 +1,6 @@
 # -*- mode: Makefile; tab-width: 8; indent-tabs-mode: t; -*-
 #--------------------------------------------------------------------------------------------------
-# Copyright (c) 2021 Marcus Geelnard
+# Copyright (c) 2022 Marcus Geelnard
 #
 # This software is provided 'as-is', without any express or implied warranty. In no event will the
 # authors be held liable for any damages arising from the use of this software.
@@ -58,26 +58,11 @@ $(OUT)/crt0.o: $(SDK_ROOT)/crt0/crt0-app.s
 $(OUT)/demo1.o: demo1.c
 	$(CC) $(CFLAGS) -o $@ $<
 
-$(OUT)/is-that-a-supra.o: is-that-a-supra.png $(PNG2MCI)
-	$(PNG2MCI) --pal4 --lzg $< $(OUT)/is-that-a-supra.mci
-	$(RAW2C) $(OUT)/is-that-a-supra.mci pic_is_that_a_supra > $(OUT)/is-that-a-supra.c
-	$(CC) $(CFLAGS) -o $@ $(OUT)/is-that-a-supra.c
+$(OUT)/mc1-logo.o: mc1-logo.png $(PNG2MCI)
+	$(PNG2MCI) --pal2 --nocomp $< $(OUT)/mc1-logo.mci
+	$(RAW2C) $(OUT)/mc1-logo.mci mc1_logo_mci > $(OUT)/mc1-logo.c
+	$(CC) $(CFLAGS) -o $@ $(OUT)/mc1-logo.c
 
-$(OUT)/retrawave-car.o: retrawave-car.png $(PNG2MCI)
-	$(PNG2MCI) --pal4 --lzg $< $(OUT)/retrawave-car.mci
-	$(RAW2C) $(OUT)/retrawave-car.mci pic_retrawave_car > $(OUT)/retrawave-car.c
-	$(CC) $(CFLAGS) -o $@ $(OUT)/retrawave-car.c
-
-$(OUT)/phantom.o: phantom.png $(PNG2MCI)
-	$(PNG2MCI) --pal4 --lzg $< $(OUT)/phantom.mci
-	$(RAW2C) $(OUT)/phantom.mci pic_phantom > $(OUT)/phantom.c
-	$(CC) $(CFLAGS) -o $@ $(OUT)/phantom.c
-
-$(OUT)/ming-charset-32x32.o: ming-charset-32x32.png $(PNG2MCI)
-	$(PNG2MCI) --pal4 $< $(OUT)/ming-charset-32x32.mci
-	$(RAW2C) $(OUT)/ming-charset-32x32.mci font_32x32 > $(OUT)/ming-charset-32x32.c
-	$(CC) $(CFLAGS) -o $@ $(OUT)/ming-charset-32x32.c
-
-$(OUT)/demo1.elf: $(OUT)/crt0.o $(OUT)/demo1.o $(OUT)/is-that-a-supra.o $(OUT)/retrawave-car.o $(OUT)/phantom.o $(OUT)/ming-charset-32x32.o $(LIBMC1)
-	$(LD) $(LDFLAGS_APP) -o $@ $(OUT)/crt0.o $(OUT)/demo1.o $(OUT)/is-that-a-supra.o $(OUT)/retrawave-car.o $(OUT)/phantom.o $(OUT)/ming-charset-32x32.o -lmc1
+$(OUT)/demo1.elf: $(OUT)/crt0.o $(OUT)/demo1.o $(OUT)/mc1-logo.o $(LIBMC1)
+	$(LD) $(LDFLAGS_APP) -o $@ $(OUT)/crt0.o $(OUT)/demo1.o $(OUT)/mc1-logo.o -lmc1
 
