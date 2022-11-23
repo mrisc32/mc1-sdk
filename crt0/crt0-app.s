@@ -30,18 +30,35 @@
 
 
 ; ----------------------------------------------------------------------------
-; Transitional stack (placed in BSS).
+; Preserved registers (from the boot program).
 ; ----------------------------------------------------------------------------
 
     .L_STACK_R1 = 0
     .L_STACK_R2 = 4
     .L_STACK_R16 = 8
-    .L_STACK_SP = 12
-    .L_STACK_LR = 16
-    .L_STACK_VL = 20
-    .L_STACK_SIZE = 24
+    .L_STACK_R17 = 12
+    .L_STACK_R18 = 16
+    .L_STACK_R19 = 20
+    .L_STACK_R20 = 24
+    .L_STACK_R21 = 28
+    .L_STACK_R22 = 32
+    .L_STACK_R23 = 36
+    .L_STACK_R24 = 40
+    .L_STACK_R25 = 44
+    .L_STACK_R26 = 48
+    .L_STACK_TP = 52
+    .L_STACK_FP = 56
+    .L_STACK_SP = 60
+    .L_STACK_LR = 64
+    .L_STACK_VL = 68
+    .L_STACK_SIZE = 72
 
-    .lcomm  .L_transitional_stack, .L_STACK_SIZE
+    ; Note: We can't use BSS here since we zero-fill the entire BSS area
+    ; *after* storing the saved registers (i.e they would be over-written).
+    ; Thus we store the saved registers in the .data section instead.
+    .section .data, "aw"
+.L_saved_regs:
+    .skip   .L_STACK_SIZE
 
 
 ; ----------------------------------------------------------------------------
@@ -55,18 +72,28 @@
 
 _start:
     ; ------------------------------------------------------------------------
-    ; Preserve clobbered calle-save registers and argc (R1) + argv (R2). We
-    ; can't use the stack (we don't have one yet) so store the registers in
-    ; our BSS area.
+    ; Preserve calle-save registers and argc (R1) + argv (R2).
     ; ------------------------------------------------------------------------
 
-    ldi     r3, #.L_transitional_stack@pc
-    stw     r1, [r3, #.L_STACK_R1]
-    stw     r2, [r3, #.L_STACK_R2]
-    stw     r16, [r3, #.L_STACK_R16]
-    stw     sp, [r3, #.L_STACK_SP]
-    stw     lr, [r3, #.L_STACK_LR]
-    stw     vl, [r3, #.L_STACK_VL]
+    ldi     r15, #.L_saved_regs@pc
+    stw     r1, [r15, #.L_STACK_R1]
+    stw     r2, [r15, #.L_STACK_R2]
+    stw     r16, [r15, #.L_STACK_R16]
+    stw     r17, [r15, #.L_STACK_R17]
+    stw     r18, [r15, #.L_STACK_R18]
+    stw     r19, [r15, #.L_STACK_R19]
+    stw     r20, [r15, #.L_STACK_R20]
+    stw     r21, [r15, #.L_STACK_R21]
+    stw     r22, [r15, #.L_STACK_R22]
+    stw     r23, [r15, #.L_STACK_R23]
+    stw     r24, [r15, #.L_STACK_R24]
+    stw     r25, [r15, #.L_STACK_R25]
+    stw     r26, [r15, #.L_STACK_R26]
+    stw     tp, [r15, #.L_STACK_TP]
+    stw     fp, [r15, #.L_STACK_FP]
+    stw     sp, [r15, #.L_STACK_SP]
+    stw     lr, [r15, #.L_STACK_LR]
+    stw     vl, [r15, #.L_STACK_VL]
 
 
     ; ------------------------------------------------------------------------
@@ -109,36 +136,54 @@ _start:
 
 
     ; ------------------------------------------------------------------------
+    ; Override the default newlib _exit() method.
+    ; ------------------------------------------------------------------------
+
+    addpc   r1, #_mc1_app_exit_handler@pc
+    call    #_set_exit_handler@pc
+
+
+    ; ------------------------------------------------------------------------
     ; Call main().
     ; ------------------------------------------------------------------------
 
     ; r1 = argc, r2 = argv
-    ldi     r3, #.L_transitional_stack@pc
-    ldw     r1, [r3, #.L_STACK_R1]
-    ldw     r2, [r3, #.L_STACK_R2]
+    ldi     r15, #.L_saved_regs@pc
+    ldw     r1, [r15, #.L_STACK_R1]
+    ldw     r2, [r15, #.L_STACK_R2]
 
     ; Call main().
     call    #main@pc
-    mov     r16, r1     ; Preserve return value.
 
-    ; Call exit().
-    call    #exit@pc
+    ; Jump to exit() (does not return).
+    tail    #exit@pc
 
 
-    ; ------------------------------------------------------------------------
-    ; Return to the caller (if we got this far).
-    ; ------------------------------------------------------------------------
+; ----------------------------------------------------------------------------
+; void _mc1_app_exit_handler(int status)
+; ----------------------------------------------------------------------------
 
-    ; Return value from main() goes in R1.
-    mov     r1, r16
-
+_mc1_app_exit_handler:
     ; Restore callee-saved registers.
-    ldi     r3, #.L_transitional_stack@pc
-    ldw     r16, [r3, #.L_STACK_R16]
-    ldw     sp, [r3, #.L_STACK_SP]
-    ldw     lr, [r3, #.L_STACK_LR]
-    ldw     vl, [r3, #.L_STACK_VL]
+    ldi     r15, #.L_saved_regs@pc
+    ldw     r16, [r15, #.L_STACK_R16]
+    ldw     r17, [r15, #.L_STACK_R17]
+    ldw     r18, [r15, #.L_STACK_R18]
+    ldw     r19, [r15, #.L_STACK_R19]
+    ldw     r20, [r15, #.L_STACK_R20]
+    ldw     r21, [r15, #.L_STACK_R21]
+    ldw     r22, [r15, #.L_STACK_R22]
+    ldw     r23, [r15, #.L_STACK_R23]
+    ldw     r24, [r15, #.L_STACK_R24]
+    ldw     r25, [r15, #.L_STACK_R25]
+    ldw     r26, [r15, #.L_STACK_R26]
+    ldw     tp, [r15, #.L_STACK_TP]
+    ldw     fp, [r15, #.L_STACK_FP]
+    ldw     sp, [r15, #.L_STACK_SP]
+    ldw     lr, [r15, #.L_STACK_LR]
+    ldw     vl, [r15, #.L_STACK_VL]
 
+    ; Return to the caller (boot program).
     ret
 
 
