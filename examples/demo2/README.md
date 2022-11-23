@@ -5,6 +5,7 @@ This folder contains a bootable demo application for the MC1 computer.
 ## System requirements
 
 * VRAM: 256 KB
+* XRAM: 256 KB
 * SD card reader
 
 ## Build & Run

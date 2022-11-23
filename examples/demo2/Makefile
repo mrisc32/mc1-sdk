@@ -28,7 +28,7 @@ CFLAGS       = -O3 -c -I $(SDK_ROOT)/libmc1/include
 AS           = mrisc32-elf-as
 ASFLAGS      = -I $(SDK_ROOT)/libmc1/include
 LD           = mrisc32-elf-gcc
-LDFLAGS_APP  = -T $(SDK_ROOT)/linker-scripts/app-vram.ld -mno-crt0 -L $(LIBMC1_DIR)/out
+LDFLAGS_APP  = -T $(SDK_ROOT)/linker-scripts/app-xram.ld -mno-crt0 -L $(LIBMC1_DIR)/out
 
 PNG2MCI      = $(SDK_ROOT)/tools/png2mci
 RAW2C        = $(SDK_ROOT)/tools/raw2c.py
