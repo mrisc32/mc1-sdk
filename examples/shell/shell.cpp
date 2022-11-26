@@ -385,7 +385,16 @@ private:
   }
 
   void execute_ls() {
-    m_display.puts("ls - not yet implemented\n");
+    // TODO(m): Add support for a path argument, and possibly option arguments (e.g. -l).
+    auto* dirp = mfat_opendir("/");
+    if (dirp != nullptr) {
+      mfat_dirent_t* dirent;
+      while ((dirent = mfat_readdir(dirp)) != nullptr) {
+        m_display.puts(dirent->d_name);
+        m_display.putc('\n');
+      }
+      mfat_closedir(dirp);
+    }
   }
 
   void execute_exit() {
