@@ -46,3 +46,4 @@ There are different ways that a program can be linked:
 * [Tools](tools/README.md).
 * C/C++ and assembler headers and libraries for interfacing the MC1 hardware.
 * Linker scripts for various executable models.
+* [Support](support/README.md).
