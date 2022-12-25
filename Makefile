@@ -66,6 +66,9 @@ install: all
 	$(MKDIR) $(DESTDIR)/share/cmake
 	$(CP) $(SUPPORT_DIR)/cmake/* $(DESTDIR)/share/cmake/
 
+	$(MKDIR) $(DESTDIR)/share/gtksourceview-4/language-specs
+	$(CP) $(SUPPORT_DIR)/gtksourceview/* $(DESTDIR)/share/gtksourceview-4/language-specs/
+
 clean:
 	$(MAKE) -C $(LIBMC1_DIR) clean
 	$(MAKE) -C $(CRT0_DIR) clean
