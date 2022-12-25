@@ -39,6 +39,7 @@ CRT0_DIR         = $(SDK_ROOT)/crt0
 TOOLS_DIR        = $(SDK_ROOT)/tools
 PNG2MCI          = $(TOOLS_DIR)/png2mci
 LINKERSCRIPT_DIR = $(SDK_ROOT)/linker-scripts
+SUPPORT_DIR      = $(SDK_ROOT)/support
 
 
 .PHONY: all install clean libmc1 crt0 FORCE
@@ -61,6 +62,9 @@ install: all
 
 	$(MKDIR) $(DESTDIR)/include/mc1
 	$(CP) $(LIBMC1_DIR)/include/mc1/* $(DESTDIR)/include/mc1/
+
+	$(MKDIR) $(DESTDIR)/share/cmake
+	$(CP) $(SUPPORT_DIR)/cmake/* $(DESTDIR)/share/cmake/
 
 clean:
 	$(MAKE) -C $(LIBMC1_DIR) clean
