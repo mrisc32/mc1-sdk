@@ -1,4 +1,4 @@
-// -*- mode: c; tab-width: 2; indent-tabs-mode: nil; -*-
+// -*- mode: c++; tab-width: 2; indent-tabs-mode: nil; -*-
 //--------------------------------------------------------------------------------------------------
 // Copyright (c) 2022 Marcus Geelnard
 //
@@ -28,20 +28,61 @@
 #include <cstdint>
 #include <cstring>
 
+// External symbols.
 extern "C" uint8_t mc1_font_8x8[(128 - 32) * 8];
 extern "C" uint8_t __vram_free_start;
 
 namespace {
 
-const uint32_t NUM_COLS = 120;
-const uint32_t NUM_ROWS = 45;
+// Screen dimensions.
+constexpr uint32_t NUM_COLS = 120U;
+constexpr uint32_t NUM_ROWS = 45U;
 
+// Limits.
+constexpr uint32_t MAX_PATH_LEN = 127U;
+constexpr int MAX_NUM_ARGS = 8U;
+
+// Static variables / state.
 sdctx_t s_sdctx;
-uint8_t s_text[NUM_COLS * NUM_ROWS + 1];
+uint8_t s_text[NUM_COLS * NUM_ROWS];
+char s_cmdline[NUM_COLS + 1];
+char s_cwd[MAX_PATH_LEN + 1];
+char s_abs_path[MAX_PATH_LEN + 1];
+char s_tmp_path[MAX_PATH_LEN + 1];
 
 uint8_t* align_to_4(uint8_t* ptr) {
   const auto aligned = (reinterpret_cast<uintptr_t>(ptr) + 3) & ~static_cast<uintptr_t>(3);
   return reinterpret_cast<uint8_t*>(aligned);
+}
+
+void append_path(char* result, const char* base, const char* path) {
+  // TODO(m): Handle ".", ".." and superfluous "/".
+  uint32_t len = 0U;
+  for (; base[len] != 0; ++len) {
+    result[len] = base[len];
+  }
+
+  if (len > 0U && base[len - 1] != '/' && len < MAX_PATH_LEN) {
+    result[len++] = '/';
+  }
+
+  for (; *path != 0 && len < MAX_PATH_LEN; ++len) {
+    result[len] = *path++;
+  }
+
+  result[len] = 0;
+}
+
+const char* make_full_path(const char* path) {
+  // Absolute path?
+  if (path[0] == '/') {
+    return path;
+  }
+
+  // Turn the relative path into an absolute path.
+  append_path(s_abs_path, s_cwd, path);
+
+  return s_abs_path;
 }
 
 class Display {
@@ -91,7 +132,7 @@ public:
   void show_load_screen() {
     // Set a constant backround color.
     auto* vcp = reinterpret_cast<uint32_t*>(0x40000010U);  // Layer 1 VCP start.
-    *vcp++ = vcp_emit_setreg(VCR_RMODE, 0U);  // Turn of dithering.
+    *vcp++ = vcp_emit_setreg(VCR_RMODE, 0U);               // Turn of dithering.
     *vcp++ = vcp_emit_setpal(0, 1);
     *vcp++ = 0xff88aa55U;
     *vcp++ = vcp_emit_waity(32767);
@@ -143,6 +184,27 @@ public:
     for (int s = 28; s >= 0; s -= 4) {
       putc(HEX[(x >> s) & 0xfU]);
     }
+  }
+
+  void putdec(uint32_t x, int min_width = 0, bool expand = false) {
+    char buf[11];
+    buf[10] = 0;
+    int i = 10;
+    int width = 1;
+    while (i > 0) {
+      buf[--i] = '0' + (x % 10U);
+      x /= 10U;
+      if (x == 0U && width >= min_width) {
+        break;
+      }
+      ++width;
+    }
+    if (expand) {
+      while (i > 0) {
+        buf[--i] = ' ';
+      }
+    }
+    puts(&buf[i]);
   }
 
   void del() {
@@ -264,6 +326,11 @@ private:
 class Shell {
 public:
   void run() {
+    // Set the default working dir.
+    s_cwd[0] = '/';
+    s_cwd[1] = 0;
+
+    // Display the welcome text.
     m_display.show_console(VRAM_FREE_START);
     m_display.clear();
     m_display.puts("Welcome to the MRISC32 Shell!\n\n");
@@ -279,13 +346,17 @@ public:
     m_display.puthex(VRAM_FREE_START);
     m_display.putc('\n');
 
+    // Initialize I/O.
     if (mount_filesystem()) {
       m_display.puts("Successfully mounted filesystem.\n");
     }
     kb_init();
 
+    // Show the prompt.
     m_display.putc('\n');
     new_prompt();
+
+    // Main loop.
     while (!m_terminate) {
       m_display.wait_vbl();
       m_display.refresh();
@@ -354,68 +425,188 @@ private:
   }
 
   void handle_enter() {
-    auto* cmd = m_display.current_line();
+    memcpy(s_cmdline, m_display.current_line(), NUM_COLS);
+    s_cmdline[NUM_COLS] = 0;
+
     m_display.putc('\n');
-    handle_command(cmd);
+    handle_command(s_cmdline);
     new_prompt();
   }
 
-  void handle_command(char* cmd) {
-    // Extract the command part.
-    // Note: We teporarily zero-terminate the string in the screen buffer in order to avoid having
-    // to allocate/duplicate the string. It's OK to add a zero after the last row in the text buffer
-    // since we have allocated one byte more than we need.
-    uint32_t len;
-    for (len = 0U; (len < NUM_COLS) && (cmd[len] != ' '); ++len) {
+  void handle_command(char* cmdline) {
+    // Extract the command parts and zero terminate each part.
+    const char* argv[MAX_NUM_ARGS];
+    int argc = 0;
+    char* arg = cmdline;
+    while (*arg != 0 && argc < MAX_NUM_ARGS) {
+      // Find start of argument.
+      for (; *arg != 0 && *arg == ' '; ++arg) {
+      }
+      char end_char = (*arg == '"') ? '"' : ' ';
+      if (end_char != ' ') {
+        ++arg;
+      }
+      argv[argc] = arg;
+
+      // Find end of argument.
+      uint32_t len = 0U;
+      for (; *arg != 0 && *arg != end_char; ++arg, ++len) {
+      }
+      if (len > 0U || (end_char != ' ' && *arg == end_char)) {
+        ++argc;
+      }
+      if (*arg != 0) {
+        // Zero-terminate the argument.
+        *arg++ = 0;
+      }
     }
-    const auto old_char = cmd[len];
-    cmd[len] = 0;
+
+    // Nothing to do?
+    if (argc == 0) {
+      return;
+    }
 
     // Handle built-in commands.
-    if (len == 2 && cmd[0] == 'l' && cmd[1] == 's') {
-      execute_ls();
-    } else if (len == 4 && cmd[0] == 'e' && cmd[1] == 'x' && cmd[2] == 'i' && cmd[3] == 't') {
-      execute_exit();
-    } else if (len > 0U) {
-      execute_program(cmd);
+    const auto* cmd = argv[0];
+    if (cmd[0] == 'l' && cmd[1] == 's' && cmd[2] == 0) {
+      execute_ls(argc, argv);
+    } else if (cmd[0] == 'c' && cmd[1] == 'd' && cmd[2] == 0) {
+      execute_cd(argc, argv);
+    } else if (cmd[0] == 'p' && cmd[1] == 'w' && cmd[2] == 'd' && cmd[3] == 0) {
+      execute_pwd(argc, argv);
+    } else if (cmd[0] == 'e' && cmd[1] == 'x' && cmd[2] == 'i' && cmd[3] == 't' && cmd[4] == 0) {
+      execute_exit(argc, argv);
+    } else {
+      execute_program(argc, argv);
     }
-
-    // Restore the char in the text buffer (drop zero termination).
-    cmd[len] = old_char;
   }
 
-  void execute_ls() {
-    // TODO(m): Add support for a path argument, and possibly option arguments (e.g. -l).
-    auto* dirp = mfat_opendir("/");
+  void execute_ls(int argc, const char** argv) {
+    // Parse arguments.
+    const auto* path = s_cwd;
+    auto flag_l = false;
+    auto flag_F = false;
+    for (int k = 1; k < argc; ++k) {
+      if (argv[k][0] == '-') {
+        const auto* flag = &argv[k][1];
+        for (; *flag != 0; ++flag) {
+          if (*flag == 'l') {
+            flag_l = true;
+          } else if (*flag == 'F') {
+            flag_F = true;
+          }
+        }
+      } else {
+        path = make_full_path(argv[k]);
+      }
+    }
+
+    // Print directory contents.
+    auto* dirp = mfat_opendir(path);
     if (dirp != nullptr) {
       mfat_dirent_t* dirent;
       while ((dirent = mfat_readdir(dirp)) != nullptr) {
+        // Stat the dirent to get more info.
+        mfat_stat_t s;
+        append_path(s_tmp_path, path, dirent->d_name);
+        if (mfat_stat(s_tmp_path, &s) != 0) {
+          memset(&s, 0, sizeof(s));
+        }
+
+        // Print information about the directory entry.
+        if (flag_l) {
+          // Mode flags.
+          auto mode = s.st_mode;
+          m_display.putc(MFAT_S_ISDIR(mode) ? 'd' : '-');
+          for (int i = 0; i < 3; ++i) {
+            m_display.putc((mode & MFAT_S_IRUSR) != 0U ? 'r' : '-');
+            m_display.putc((mode & MFAT_S_IWUSR) != 0U ? 'w' : '-');
+            m_display.putc((mode & MFAT_S_IXUSR) != 0U ? 'x' : '-');
+            mode <<= 3;
+          }
+
+          // File size.
+          m_display.putdec(s.st_size, 0, true);
+          m_display.putc(' ');
+
+          // Modification time.
+          m_display.putdec(s.st_mtim.year, 4);
+          m_display.putc('-');
+          m_display.putdec(s.st_mtim.month, 2);
+          m_display.putc('-');
+          m_display.putdec(s.st_mtim.day, 2);
+          m_display.putc(' ');
+          m_display.putdec(s.st_mtim.hour, 2);
+          m_display.putc(':');
+          m_display.putdec(s.st_mtim.minute, 2);
+          m_display.putc(' ');
+        }
+
+        // File/dir name.
         m_display.puts(dirent->d_name);
+
+        // Add suitable suffix when -F is used.
+        if (flag_F) {
+          if (MFAT_S_ISDIR(s.st_mode)) {
+            m_display.putc('/');
+          } else if ((s.st_mode & MFAT_S_IXUSR) != 0U) {
+            m_display.putc('*');
+          }
+        }
+
         m_display.putc('\n');
       }
       mfat_closedir(dirp);
     }
   }
 
-  void execute_exit() {
+  void execute_pwd(int argc, const char** argv) {
+    // Ignore arguments.
+    (void)argc;
+    (void)argv;
+
+    m_display.puts(s_cwd);
+    m_display.putc('\n');
+    return;
+  }
+
+  void execute_cd(int argc, const char** argv) {
+    // Default to the root dir.
+    const char* new_cwd = "/";
+    if (argc > 1) {
+      new_cwd = make_full_path(argv[1]);
+    }
+
+    int len;
+    for (len = 0; *new_cwd != 0; ++len) {
+      s_cwd[len] = *new_cwd++;
+    }
+    s_cwd[len] = 0;
+  }
+
+  void execute_exit(int argc, const char** argv) {
+    // Ignore arguments.
+    (void)argc;
+    (void)argv;
+
     m_terminate = true;
   }
 
-  void execute_program(const char* exe_name) {
+  void execute_program(int argc, const char** argv) {
     // Hide the console.
     m_display.show_load_screen();
     m_display.wait_vbl();
 
     // Try to load the program.
+    // TODO(m): Take CWD into account.
     uint32_t entry_address = 0U;
-    bool success = elf32_load(exe_name, &entry_address);
+    bool success = elf32_load(argv[0], &entry_address);
 
     if (success) {
       // Start the loaded application.
       using entry_fun_t = int(int, const char**);
       auto* entry_fun = reinterpret_cast<entry_fun_t*>(entry_address);
-      const char* argv[1] = {exe_name};
-      (void)entry_fun(1, argv);
+      (void)entry_fun(argc, argv);
 
       // Restore the console.
       m_display.show_console(VRAM_FREE_START);
@@ -427,7 +618,7 @@ private:
       // Restore the console and print an error message.
       m_display.show_console(VRAM_FREE_START);
       m_display.puts("*** Failed to load program: <");
-      m_display.puts(exe_name);
+      m_display.puts(argv[0]);
       m_display.puts(">\n");
     }
   }
