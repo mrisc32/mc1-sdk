@@ -55,6 +55,28 @@ uint8_t* align_to_4(uint8_t* ptr) {
   return reinterpret_cast<uint8_t*>(aligned);
 }
 
+bool inline is_upper_case(int c) {
+  return (c >= 'A') && (c <= 'Z');
+}
+
+bool inline is_lower_case(int c) {
+  return (c >= 'a') && (c <= 'z');
+}
+
+int inline to_upper_case(int c) {
+  if (is_lower_case(c)) {
+    return (c - 'a') + 'A';
+  }
+  return c;
+}
+
+int inline to_lower_case(int c) {
+  if (is_upper_case(c)) {
+    return (c - 'A') + 'a';
+  }
+  return c;
+}
+
 void append_path(char* result, const char* base, const char* path) {
   // TODO(m): Handle ".", ".." and superfluous "/".
   uint32_t len = 0U;
@@ -261,6 +283,10 @@ public:
     return reinterpret_cast<char*>(&s_text[m_y * NUM_COLS]);
   }
 
+  uint32_t x() const {
+    return m_x;
+  }
+
 private:
   static const uint32_t BLINK_INTERVAL = 32;
   static const uint32_t GFX_WIDTH = NUM_COLS * 8;
@@ -378,6 +404,9 @@ private:
           case KB_ENTER:
             handle_enter();
             break;
+          case KB_TAB:
+            tab_complete();
+            break;
           case KB_LEFT:
             m_display.move_x(-1);
             break;
@@ -403,6 +432,61 @@ private:
             m_display.putc(kb_event_to_char(event));
         }
       }
+    }
+  }
+
+  void tab_complete() {
+    // Get the current cursor column.
+    auto col = m_display.x();
+    if (col == 0U || col >= (NUM_COLS - 1U)) {
+      return;
+    }
+
+    // Find the start of the prefix.
+    auto* line = m_display.current_line();
+    uint32_t start = col - 1U;
+    for (; start > 0U && line[start] != ' '; --start) {
+    }
+    if (line[start] == ' ') {
+      ++start;
+    }
+    if (start == col) {
+      return;
+    }
+
+    // Extract the prefix.
+    uint32_t len = col - start;
+    auto* prefix = &line[start];
+
+    // Do a directory listing in CWD and find the first match.
+    // TODO(m): Do a more intelligent match (either bash-style or cmd-style).
+    auto* dirp = mfat_opendir(s_cwd);
+    if (dirp != nullptr) {
+      mfat_dirent_t* dirent;
+      while ((dirent = mfat_readdir(dirp)) != nullptr) {
+        // Compare the prefix to the start of the file name.
+        bool equal = true;
+        for (uint32_t i = 0U; i < len; ++i) {
+          int a = to_upper_case(prefix[i]);
+          int b = dirent->d_name[i];  // Always upper case.
+          if (a != b) {  // Also handles null-termination (file name shorter than prefix).
+            equal = false;
+            break;
+          }
+        }
+
+        // If we had a match, print the rest of the file name and be done.
+        if (equal) {
+          const auto make_lower_case = is_lower_case(prefix[0]);
+          for (auto* src = &dirent->d_name[len]; *src != 0; ++src) {
+            const auto c = static_cast<int>(*src);
+            m_display.putc(make_lower_case ? to_lower_case(c) : c);
+          }
+          m_display.putc(' ');
+          break;
+        }
+      }
+      mfat_closedir(dirp);
     }
   }
 
