@@ -599,15 +599,12 @@ private:
 
         // Print information about the directory entry.
         if (flag_l) {
-          // Mode flags.
-          auto mode = s.st_mode;
+          // Mode flags (only print owner flags - the others are duplicates).
+          const auto mode = s.st_mode;
           m_display.putc(MFAT_S_ISDIR(mode) ? 'd' : '-');
-          for (int i = 0; i < 3; ++i) {
-            m_display.putc((mode & MFAT_S_IRUSR) != 0U ? 'r' : '-');
-            m_display.putc((mode & MFAT_S_IWUSR) != 0U ? 'w' : '-');
-            m_display.putc((mode & MFAT_S_IXUSR) != 0U ? 'x' : '-');
-            mode <<= 3;
-          }
+          m_display.putc((mode & MFAT_S_IRUSR) != 0U ? 'r' : '-');
+          m_display.putc((mode & MFAT_S_IWUSR) != 0U ? 'w' : '-');
+          m_display.putc((mode & MFAT_S_IXUSR) != 0U ? 'x' : '-');
 
           // File size.
           m_display.putdec(s.st_size, 0, true);
@@ -681,12 +678,17 @@ private:
     m_display.show_load_screen();
     m_display.wait_vbl();
 
+    // Take CWD into account.
+    // TODO(m): Use a proper PATH?
+    const char* cmd_path = make_full_path(argv[0]);
+
     // Try to load the program.
-    // TODO(m): Take CWD into account.
     uint32_t entry_address = 0U;
-    bool success = elf32_load(argv[0], &entry_address);
+    bool success = elf32_load(cmd_path, &entry_address);
 
     if (success) {
+      // TODO(m): Invalidate the instruction cache.
+
       // Start the loaded application.
       using entry_fun_t = int(int, const char**);
       auto* entry_fun = reinterpret_cast<entry_fun_t*>(entry_address);
