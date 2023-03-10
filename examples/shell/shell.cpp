@@ -25,8 +25,18 @@
 #include <mc1/sdcard.h>
 #include <mc1/vcp.h>
 
+#include <mr32intrin.h>
 #include <cstdint>
 #include <cstring>
+
+// TODO(m): Move these to mr32intrin.h
+#define _MR32_CCTRL_INVALIDATE_INSTR_ALL 0x0000
+#define _MR32_CCTRL_INVALIDATE_DATA_ALL 0x0001
+#define _MR32_CCTRL_INVALIDATE_BRANCH_ALL 0x0002
+#define _MR32_CCTRL_INVALIDATE_INSTR_ADDR 0x0100
+#define _MR32_CCTRL_INVALIDATE_DATA_ADDR 0x0101
+#define _MR32_CCTRL_FLUSH_DATA_ALL 0x0201
+#define _MR32_CCTRL_FLUSH_DATA_ADDR 0x0301
 
 // External symbols.
 extern "C" uint8_t mc1_font_8x8[(128 - 32) * 8];
@@ -687,7 +697,11 @@ private:
     bool success = elf32_load(cmd_path, &entry_address);
 
     if (success) {
-      // TODO(m): Invalidate the instruction cache.
+      // Synchronize caches (ensure that the new data becomes visible to the I$).
+      _mr32_cctrl(0, _MR32_CCTRL_FLUSH_DATA_ALL);
+      _mr32_cctrl(0, _MR32_CCTRL_INVALIDATE_INSTR_ALL);
+      _mr32_cctrl(0, _MR32_CCTRL_INVALIDATE_BRANCH_ALL);
+      _mr32_sync();
 
       // Start the loaded application.
       using entry_fun_t = int(int, const char**);
