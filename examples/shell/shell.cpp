@@ -41,6 +41,8 @@
 // External symbols.
 extern "C" uint8_t mc1_font_8x8[(128 - 32) * 8];
 extern "C" uint8_t __vram_free_start;
+extern "C" uint8_t __boot_mem_start;
+extern "C" uint8_t __boot_mem_end;
 
 namespace {
 
@@ -115,6 +117,19 @@ const char* make_full_path(const char* path) {
   append_path(s_abs_path, s_cwd, path);
 
   return s_abs_path;
+}
+
+inline uint32_t calc_crc_of_all_shell_memory() {
+  // Calculate a checksum of all our memory (program code + data + heap + stack).
+  volatile auto* mem_start = reinterpret_cast<volatile uint8_t*>(&__boot_mem_start);
+  volatile auto* mem_end = reinterpret_cast<volatile uint8_t*>(&__boot_mem_end);
+
+  // We assume that memory addresses are word-aligned (defined by the linker script).
+  uint32_t crc = ~0U;
+  for (auto* ptr = mem_start; ptr < mem_end; ptr += 4) {
+    crc = _mr32_crc32c_32(crc, *ptr);
+  }
+  return ~crc;
 }
 
 class Display {
@@ -697,16 +712,8 @@ private:
     bool success = elf32_load(cmd_path, &entry_address);
 
     if (success) {
-      // Synchronize caches (ensure that the new data becomes visible to the I$).
-      _mr32_cctrl(0, _MR32_CCTRL_FLUSH_DATA_ALL);
-      _mr32_cctrl(0, _MR32_CCTRL_INVALIDATE_INSTR_ALL);
-      _mr32_cctrl(0, _MR32_CCTRL_INVALIDATE_BRANCH_ALL);
-      _mr32_sync();
-
-      // Start the loaded application.
-      using entry_fun_t = int(int, const char**);
-      auto* entry_fun = reinterpret_cast<entry_fun_t*>(entry_address);
-      (void)entry_fun(argc, argv);
+      // Call the entry point of the loaded program.
+      (void)call_main_checked(entry_address, argc, argv);
 
       // Restore the console.
       m_display.show_console(VRAM_FREE_START);
@@ -744,6 +751,46 @@ private:
   static int write_block_fun(const char*, unsigned, void*) {
     // Not implemented.
     return -1;
+  }
+
+  int call_main_checked(uint32_t entry_address, int argc, const char** argv) {
+    // Synchronize caches (ensure that the loaded program code becomes visible to the CPU
+    // front-end).
+    _mr32_cctrl(0, _MR32_CCTRL_FLUSH_DATA_ALL);
+    _mr32_sync();
+    _mr32_cctrl(0, _MR32_CCTRL_INVALIDATE_INSTR_ALL);
+    _mr32_cctrl(0, _MR32_CCTRL_INVALIDATE_BRANCH_ALL);
+    _mr32_sync();
+
+    // TODO(m): Until SYNC is fully implemented in MRISC32-A1 we insert a bunch of NOP:s here to
+    // flush the start of the pipeline.
+    asm volatile(
+        "nop\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "nop\n\t"
+        "nop");
+
+    // Get the checksum of our RAM (shell program code + stack + heap + data) before running the
+    // application.
+    const auto crc_before = calc_crc_of_all_shell_memory();
+
+    // Start the loaded application.
+    using entry_fun_t = int(int, const char**);
+    auto* entry_fun = reinterpret_cast<entry_fun_t*>(entry_address);
+    int exit_code = entry_fun(argc, argv);
+
+    // Check if the memory contents has been corrupted.
+    const auto crc_after = calc_crc_of_all_shell_memory();
+    if (crc_after != crc_before) {
+      m_display.puts(
+          "*** Warning: Memory has been corrupted by the application! Consider rebooting.\n");
+    }
+
+    return exit_code;
   }
 
   bool m_terminate = false;

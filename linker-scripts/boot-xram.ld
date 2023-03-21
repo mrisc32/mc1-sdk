@@ -26,57 +26,28 @@
 /* Linker script for MC1 secondary boot that loads into VRAM                 */
 /*                                                                           */
 /* The secondary boot program is loaded into a small portion of the lower    */
-/* part of VRAM. It re-uses the BSS area that was used by the ROM. The       */
-/* purpose of a secondary boot program is to act as a small shell or loader  */
-/* for other programs.                                                       */
+/* part of VRAM. The purpose of a secondary boot program is to act as a      */
+/* small shell or loader for other programs.                                  */
 /* ------------------------------------------------------------------------- */
 
 OUTPUT_FORMAT("elf32-mrisc32")
 OUTPUT_ARCH("mrisc32")
 ENTRY(_start)
 
-__rom_bss_start = 0x40000100;  /* Start of ROM BSS */
-__rom_bss_end   = 0x40001000;  /* End of ROM BSS */
+__app_start       = 0x82000000;  /* Program start address (@ 32 MB) */
+__vram_free_start = 0x40000100;  /* Start of free VRAM */
 
 SECTIONS
 {
     /* --------------------------------------------------------------------- */
-    /* BSS comes first, in order to re-use the ROM BSS area.                 */
-    /* We define __bss_start and __bss_size so the startup code knows what   */
-    /* memory area to clear.                                                 */
+    /* Code.                                                                 */
     /* --------------------------------------------------------------------- */
 
-    __bss_start = __rom_bss_start;
-    . = __bss_start;
+    . = __app_start;
 
     /* Mark the start of the boot program memory.  */
     __boot_mem_start = .;
 
-    .sbss (NOLOAD) :
-    {
-        *(.sbss*)
-        *(.scommon*)
-    }
-
-    . = ALIGN(32);
-    .bss (NOLOAD) :
-    {
-        *(.bss*)
-        *(COMMON)
-    }
-
-    . = ALIGN(4);
-    __bss_size = . - __bss_start;
-
-
-    /* --------------------------------------------------------------------- */
-    /* Code.                                                                 */
-    /* --------------------------------------------------------------------- */
-
-    /* Ensure that we don't clobber the ROM BSS */
-    . = MAX(., __rom_bss_end);
-
-    . = ALIGN(32);
     .text :
     {
         *(.text.start)  /* Ensure that the _start() function is placed first */
@@ -138,13 +109,34 @@ SECTIONS
         *(.sdata*)
     }
 
+    __app_size = . - __app_start;
+
 
     /* --------------------------------------------------------------------- */
-    /* Start of free VRAM.                                                   */
+    /* We define __bss_start and __bss_size so the startup code knows what   */
+    /* memory area to clear.                                                 */
     /* --------------------------------------------------------------------- */
 
     . = ALIGN(32);
-    __vram_free_start = .;
+    __bss_start = .;
+
+    .sbss (NOLOAD) :
+    {
+        *(.sbss*)
+        *(.scommon*)
+    }
+
+    . = ALIGN(32);
+    .bss (NOLOAD) :
+    {
+        *(.bss*)
+        *(COMMON)
+    }
+
+    . = ALIGN(4);
+    __bss_end = .;
+    __bss_size = __bss_end - __bss_start;
+
 
     /* Mark the end of the boot program memory.  */
     __boot_mem_end = .;
