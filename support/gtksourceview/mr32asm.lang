@@ -99,11 +99,6 @@
     </context>
 
     <context id="instruction" style-ref="instruction">
-      <!-- System registers -->
-      <keyword>xchgsr</keyword>
-      <keyword>getsr</keyword>
-      <keyword>setsr</keyword>
-
       <!-- Integer arithemtic / logic -->
       <keyword>and(\.(pn|np|nn))?(/f)?</keyword>
       <keyword>or(\.(pn|np|nn))?(/f)?</keyword>
@@ -138,10 +133,6 @@
       <keyword>slt(\.(b|h))?(/f)?</keyword>
       <keyword>sltu(\.(b|h))?(/f)?</keyword>
 
-      <keyword>clz(\.(b|h))?(/f)?</keyword>
-      <keyword>popcnt(\.(b|h))?(/f)?</keyword>
-      <keyword>rev(\.(b|h))?(/f)?</keyword>
-
       <keyword>shuf</keyword>
       <keyword>sel(\.(132|213|231))?(/f)?</keyword>
       <keyword>pack(\.(b|h))?(/f)?</keyword>
@@ -153,6 +144,13 @@
 
       <keyword>addpc</keyword>
       <keyword>addpchi</keyword>
+
+      <keyword>clz(\.(b|h))?(/f)?</keyword>
+      <keyword>popcnt(\.(b|h))?(/f)?</keyword>
+      <keyword>rev(\.(b|h))?(/f)?</keyword>
+
+      <keyword>crc32c\.(8|16|32)</keyword>
+      <keyword>crc32\.(8|16|32)</keyword>
 
       <!-- Load / store -->
       <keyword>ldb</keyword>
@@ -217,19 +215,26 @@
       <keyword>funph(\.h)?(/f)?</keyword>
       <keyword>fsqrt(\.(b|h))?(/f)?</keyword>
 
+      <!-- System control -->
+      <keyword>xchgsr</keyword>
+      <keyword>wait</keyword>
+      <keyword>sync</keyword>
+      <keyword>cctrl</keyword>
+
       <!-- Aliases -->
       <keyword>asr(\.(b|h))?(/f)?</keyword>
       <keyword>b</keyword>
       <keyword>bl</keyword>
       <keyword>call</keyword>
+      <keyword>getsr</keyword>
       <keyword>lsl(\.(b|h))?(/f)?</keyword>
       <keyword>lsr(\.(b|h))?(/f)?</keyword>
       <keyword>mov</keyword>
       <keyword>nop</keyword>
       <keyword>ret</keyword>
+      <keyword>setsr</keyword>
       <keyword>tail</keyword>
     </context>
-
 
     <context id="label-dollar" style-ref="label">
       <match>[1-9][0-9]{0,2}\$</match>
