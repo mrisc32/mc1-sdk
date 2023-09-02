@@ -1,3 +1,5 @@
+## This repo has moved to: https://gitlab.com/mrisc32/mc1-sdk
+
 # MC1 SDK
 
 This is a software development kit (SDK) for the [MC1 computer](https://github.com/mrisc32/mc1).
